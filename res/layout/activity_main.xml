@@ -1,0 +1,34 @@
+<LinearLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android" 
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:orientation="vertical" 
+    android:weightSum="10"
+    android:screenOrientation="portrait" >
+   
+   <ImageView
+        android:id="@+id/picture"
+        android:layout_height="0dp" 
+        android:layout_width="match_parent"
+        android:layout_weight="7.5"
+        android:src="@drawable/markertemplatematching" />
+    
+    <TextView 
+        android:id="@+id/debugOutput"
+        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:gravity="center"
+        android:layout_weight="1.5"
+        android:layout_marginTop="2dp"
+        android:text=" no action yet " />
+
+    <Button 
+        android:id="@+id/reset"
+        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_weight="1"
+        android:text="reset"
+        tools:context=".MainActivity" />
+      
+</LinearLayout>
