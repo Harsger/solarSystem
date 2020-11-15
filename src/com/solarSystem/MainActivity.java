@@ -25,9 +25,30 @@ import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Color;
 
+class Controller{
+        
+    public static Display display;
+    public static ImageView picture;
+    public static TextView debugOutput;
+    public static Button resetButton;
+    public static AssetManager assetManager;
+    
+//     public static void initialize(){
+//         
+//         display = getWindowManager().getDefaultDisplay();
+//         picture = (ImageView)findViewById(R.id.picture);
+//         debugOutput = (TextView)findViewById(R.id.debugOutput);
+//         resetButton = (Button)findViewById(R.id.reset);
+//         assetManager = getAssets();
+//     }
+    
+}
+
 class OfUse{
     public static double maximum = Math.pow(10,6);
     public static double minimum = Math.pow(10,-12);
+    public static double angleFactor = - Math.PI * 0.3 / Math.sqrt(2.) ;
+    public static double pixelThreshold = 10. ;
 }
 
 class Dot{
@@ -349,26 +370,175 @@ class database{
     public static Bitmap projection ;
     public static Bitmap emptyImage ;
     
+    public static void fill(){
+
+        Integer counter = 0 , index , coord ;
+        String line;
+        Point dot = new Point();
+        
+        String[] files = new String[1];
+        String[] columns;
+        
+        orte = new ArrayList< Punkt >();
+        extrema = new double[][] {
+                        { -1. , 1. } ,
+                        { -1. , 1. } ,
+                        { -1. , 1. }
+                    };
+        
+        try{
+            files = Controller.assetManager.list("");
+            counter = files.length;
+        }
+        catch(IOException e){
+            Controller.debugOutput.setText(
+                " can not read database "
+            );
+        }
+        
+        try{
+        
+            BufferedReader reader = new BufferedReader( 
+                                        new InputStreamReader( 
+                                            Controller.assetManager.open("stars.txt") 
+                                        ) 
+                                    );
+            
+            counter = 0;
+            while( ( line = reader.readLine() ) != null ){
+            
+                columns = line.split("\t");
+                if( columns.length < 4 ) continue;
+                
+                orte.add( new Punkt(
+                        Double.parseDouble( columns[1] ) ,
+                        Double.parseDouble( columns[2] ) ,
+                        Double.parseDouble( columns[3] ) ,
+                        Color.WHITE
+                    ) 
+                );
+                
+                if( counter < 1 ){
+                    extrema = new double[][] {
+                        { orte.get(counter).koord[0] , orte.get(counter).koord[0] } ,
+                        { orte.get(counter).koord[1] , orte.get(counter).koord[1] } ,
+                        { orte.get(counter).koord[2] , orte.get(counter).koord[2] }
+                    };
+                }
+                
+                for( coord=0 ; coord<3 ; coord++ ){
+                
+                    if( extrema[coord][0] > orte.get(counter).koord[coord] )
+                        extrema[coord][0] = orte.get(counter).koord[coord] ;
+                    
+                    if( extrema[coord][1] < orte.get(counter).koord[coord] )
+                        extrema[coord][1] = orte.get(counter).koord[coord] ;
+                        
+                }
+                
+                counter++;
+                
+            }
+            
+        }
+        catch(IOException e){
+            line = "" ;
+            for(index=0; index<counter; index++){
+                line += files[index];
+                line += "\n";
+            }
+            Controller.debugOutput.setText(
+                " can not read database "
+                +
+                " #files : "
+                +
+                counter.toString()
+                +
+                "\n"
+                +
+                line
+            );
+        }
+        
+        if( 
+            extrema[0][1] != extrema[0][0]
+            ||
+            extrema[1][1] != extrema[1][0]
+            ||
+            extrema[2][1] != extrema[2][0]
+        ){
+
+            maxRange = extrema[0][1] - extrema[0][0] ;
+            for( index=1; index<3; index++ ){
+                if( extrema[index][1] - extrema[index][0] > maxRange )
+                    maxRange = extrema[index][1] - extrema[index][0] ;
+            }
+                    
+            Controller.display.getSize(dot);
+            imageSize = new int[]{ (int)( (double)dot.x / 0.75 ) , dot.y };
+            
+//             imageSize = new int[]{
+//                                                 Controller.picture.getMeasuredWidth() ,
+//                                                 Controller.picture.getMeasuredHeight() 
+//                                             };
+                                            
+            imageScale = imageSize[0] ;
+            if( imageScale > imageSize[1] ) 
+                imageScale = imageSize[1] ;            
+                
+            Controller.debugOutput.setText(
+                                    " width "
+                                    +
+                                    imageSize[0]
+                                    +
+                                    " | "
+                                    +
+                                    " height "
+                                    +
+                                    imageSize[1]
+                                );
+    
+            projection = Bitmap.createBitmap( 
+                                                imageSize[0], 
+                                                imageSize[1], 
+                                                Bitmap.Config.ARGB_8888
+                                            );    
+                                            
+            emptyImage = projection.copy( projection.getConfig() , true ) ;
+            
+            for(coord=0; coord<imageSize[0]; coord++){
+                emptyImage.setPixel( coord , 0 , Color.BLUE );
+                emptyImage.setPixel( coord , imageSize[1]-1 , Color.BLUE );
+            }
+            for(coord=0; coord<imageSize[1]; coord++){
+                emptyImage.setPixel( 0 , coord , Color.BLUE );
+                emptyImage.setPixel( imageSize[0]-1 , coord , Color.BLUE );
+            }
+        
+        }
+        
+    }
+    
 }
 
 class Projektor{
-    double bereich ;
-    Punkt beob ;
-    Punkt forward ;
-    Punkt upDir ;
-    public Projektor(double ber){
+    static double bereich ;
+    static Punkt beob ;
+    static Punkt forward ;
+    static Punkt upDir ;
+    public static void start(double ber){
         bereich = ber ;
         beob    = new Punkt(0., 0., ber, 0);
         forward = new Punkt(0., 0., -1, 0);
         upDir   = new Punkt(0., 1., 0., 0);
     }
-    public Projektor(double ber, Punkt be, Punkt fow, Punkt up){
+    public static void start(double ber, Punkt be, Punkt fow, Punkt up){
         bereich = ber ;
         beob = be;
         forward = fow;
         upDir = up;
     }
-    public void projektion(){
+    public static void projektion(){
 
         ///////////////////////////////define variables/////////////////////////////////////////////
         double rx, ry, rz;
@@ -379,9 +549,9 @@ class Projektor{
         double ow = 0.;
         double setver = 1.;
         double sv = 0.;
-        Punkt zax = new Punkt(this.forward);
+        Punkt zax = new Punkt(forward);
         zax = zax.multNew(-1.).normal();
-        Punkt yax = new Punkt(this.upDir);
+        Punkt yax = new Punkt(upDir);
         yax = yax.normal();
         Punkt xax = yax.cross(zax).normal();
         Matrix camTrafo = new Matrix(4,4);
@@ -390,7 +560,8 @@ class Projektor{
         double[] projHom = new double[4];
         double win=0.;
         double distance=0.;
-        double wver=Math.cos(oefwin);
+//         double wver=Math.cos(oefwin);
+        double wver=0.;
         ///////////////////////////////define variables END/////////////////////////////////////////////
 
         if( Math.abs(Math.tan(oefwin)) > OfUse.minimum ){ow=1./Math.tan(oefwin);}
@@ -437,8 +608,8 @@ class Projektor{
         //////////////////////////////projekt orte to zBuffer///////////////////////////////
         database.zBuffer.clear();
         for(int k=0; k<database.orte.size(); k++){
-            win = this.forward.winkel( database.orte.get(k).subt( this.beob ) );
-            distance = database.orte.get(k).dist( this.beob );
+            win = forward.winkel( database.orte.get(k).subt( beob ) );
+            distance = database.orte.get(k).dist( beob );
             if( ( distance >= near && distance <= far ) && win >= wver ){
                 //Kamtrafo und Projektion
                 for(int i=0; i<4; i++){
@@ -457,7 +628,7 @@ class Projektor{
         }
         //////////////////////////////projekt orte to zBuffer END///////////////////////////////
     }
-    public void zBuffering(){
+    public static void zBuffering(){
         database.zweiD.clear();
         double rx, ry, cz;
         int rc;
@@ -508,7 +679,7 @@ class Projektor{
             database.zweiD.add( new Dot(rx ,ry, rc));
         }
     }
-    public void draw(){
+    public static void draw(){
         database.projection = database.emptyImage.copy( database.emptyImage.getConfig() , true ) ;
         double tx, ty;
         double ber = 1.;
@@ -542,93 +713,142 @@ class Projektor{
 //             }
         }
     }
-    public void initialize(){
-        this.projektion();
-        this.zBuffering();
-        this.draw();
+    public static void initialize(){
+        projektion();
+        zBuffering();
+        draw();
     }
-    public void rotateView(Punkt rotAx, double angle){
+    public static void rotateView(Punkt rotAx, double angle){
         Matrix rotMat = new Matrix(rotAx, angle);
         if( forward.cross( rotAx ).norm() > OfUse.minimum ){
-            this.forward = rotMat.mulPtoP(forward);
-            this.forward = this.forward.normal();
+            forward = rotMat.mulPtoP(forward);
+            forward = forward.normal();
         }
         if( upDir.cross( rotAx ).norm() > OfUse.minimum ){
-            this.upDir = rotMat.mulPtoP(upDir);
-            this.upDir = this.upDir.normal();
+            upDir = rotMat.mulPtoP(upDir);
+            upDir = upDir.normal();
         }
-        this.initialize();
+        initialize();
     }
-    public void rotatePos(Punkt rotAx, double angle){
+    public static void rotatePos(Punkt rotAx, double angle){
         Matrix rotMat = new Matrix(rotAx, angle);
-        this.beob = rotMat.mulPtoP(beob);
+        beob = rotMat.mulPtoP(beob);
         if( forward.cross( rotAx ).norm() > OfUse.minimum ){
-            this.forward = rotMat.mulPtoP(forward);
-            this.forward = this.forward.normal();
+            forward = rotMat.mulPtoP(forward);
+            forward = forward.normal();
         }
 //         if( upDir.cross( rotAx ).norm() > OfUse.minimum ){
         if( upDir.cross( rotAx ).norm() > 0.1 ){
-            this.upDir = rotMat.mulPtoP(upDir);
-            this.upDir = this.upDir.normal();
+            upDir = rotMat.mulPtoP(upDir);
+            upDir = upDir.normal();
         }
-        this.initialize();
+        initialize();
     }
-    public void movePos(Punkt direction, double stepsize){
+    public static void movePos(Punkt direction, double stepsize){
         Punkt step = new Punkt(direction);
         step = step.normal().multNew(stepsize);
-        this.beob = beob.adi(step);
-        this.initialize();
+        beob = beob.adi(step);
+        initialize();
+    }
+    public static void rotateBYinput(){
+
+        double[] scale = new double[]{ 
+                                database.currentTouch[0] - database.lastTouch[0] ,
+                                database.currentTouch[1] - database.lastTouch[1]
+                            } ;
+                            
+        if( upDir.norm() > OfUse.minimum ) database.lastKnown = upDir ;
+
+        if( Math.abs( scale[0] ) > OfUse.pixelThreshold || Math.abs( scale[1] ) > OfUse.pixelThreshold ){
+        
+            if( Math.abs( scale[0] ) < OfUse.pixelThreshold / 2 ) scale[0] = 0 ;
+            if( Math.abs( scale[1] ) < OfUse.pixelThreshold / 2 ) scale[1] = 0 ;
+
+            database.axis = forward.cross( upDir );
+            database.axis.mult( Math.abs( scale[0] ) ) ;
+            database.direction = upDir.multNew( Math.abs( scale[1] ) ) ;
+//                     database.axis.mult( scale[0] ) ;
+//                     database.direction = upDir.multNew( scale[1] ) ;
+            database.direction = database.direction.adi( database.axis );
+            database.direction = database.direction.normal() ;
+            database.axis = forward.cross( database.direction );
+            
+            double ratio = Math.sqrt( scale[0] * scale[0] + scale[1] * scale[1] ) / database.imageScale ;
+            
+            if( scale[0] < 0. && scale[1] < 0. ) ratio *= -1. ;
+            if( scale[0] > 0. && scale[1] > 0. ) ratio *=  1. ;
+            
+            if( scale[0] < 0. && scale[1] > 0. ){ 
+                database.axis = database.axis.cross( forward ).normal() ;
+                ratio *=  1. ;
+            }
+            if( scale[0] > 0. && scale[1] < 0. ){ 
+                database.axis = database.axis.cross( forward ).normal() ;
+                ratio *= -1. ;
+            }
+            
+            if( scale[0] == 0 && scale[1] < 0 ) ratio *= -1. ;
+            if( scale[1] == 0 && scale[0] < 0 ) ratio *= -1. ;
+            
+            if( database.axis.norm() > OfUse.minimum ){
+            
+                rotatePos( database.axis , ratio * OfUse.angleFactor );
+                
+                if( upDir.norm() < OfUse.minimum ){ 
+                
+                    upDir = database.lastKnown ;
+                    initialize() ;
+                    
+                }
+    
+                Controller.picture.setImageBitmap( database.projection );
+                
+            }
+            
+        }
+        
+    }
+    public static void toText(){
+                    
+        Controller.debugOutput.setText(
+            String.format(
+                            " beob ("+
+                                        "%1$.0f"+"|"+
+                                        "%2$.0f"+"|"+
+                                        "%3$.0f"+
+                                    ")"+
+                            "\n"+
+                            " forward ("+
+                                        "%4$ 3.2f"+"|"+
+                                        "%5$ 3.2f"+"|"+
+                                        "%6$ 3.2f"+
+                                    ")"+
+                            "\n"+
+                            " upDir ("+
+                                        "%7$ 3.2f"+"|"+
+                                        "%8$ 3.2f"+"|"+
+                                        "%9$ 3.2f"+
+                                    ")"
+//                             +
+//                             "\n"+
+//                             " scale ("+
+//                                         "%10$.0f"+"|"+
+//                                         "%11$.0f"+
+//                                     ")"
+                            ,
+                            beob.koord[0]   , beob.koord[1]   , beob.koord[2]   ,
+                            forward.koord[0], forward.koord[1], forward.koord[2],
+                            upDir.koord[0]  , upDir.koord[1]  , upDir.koord[2]
+//                             ,
+//                             database.currentTouch[0] - database.lastTouch[0] ,
+//                             database.currentTouch[1] - database.lastTouch[1]
+                        )
+        );
+                
     }
 }
 
 public class MainActivity extends Activity {
-
-    Integer counter = 0 , index , coord ;
-    static int x , y , z ;
-    String line;
-    Point dot = new Point();
-    boolean changer;
-    double[] scale ;
-    double angleFactor = - Math.PI * 0.3 / Math.sqrt(2.) ;
-    double ratio ;
-    double pixelThreshold = 10. ;
-    
-    BufferedReader reader;
-    
-    String[] files;
-    String[] columns;
-    
-    Projektor raster;
-
-//     public static void loadDataFromView(View v) {
-//         
-//         database.imageSize = new int[]{
-//             v.getLayoutParams().width , 
-//             v.getLayoutParams().height
-//         };
-//     
-//         database.projection = Bitmap.createBitmap( 
-//                                             database.imageSize[0], 
-//                                             database.imageSize[1], 
-//                                             Bitmap.Config.ARGB_8888
-//                                         );    
-//                                         
-//         database.emptyImage = database.projection ;
-//         
-//         for(x=0; x<database.imageSize[0]; x++){
-//             database.emptyImage.setPixel( x , 0 , Color.BLUE );
-//             database.emptyImage.setPixel( x , database.imageSize[1]-1 , Color.BLUE );
-//         }
-//         for(y=0; y<database.imageSize[1]; y++){
-//             database.emptyImage.setPixel( 0 , y , Color.BLUE );
-//             database.emptyImage.setPixel( database.imageSize[0]-1 , y , Color.BLUE );
-//         }
-//                                         
-//         Canvas c = new Canvas( database.emptyImage );
-//         v.layout( 0 , 0 , database.imageSize[0] , database.imageSize[1] );
-//         v.draw(c);
-//         
-//     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -636,32 +856,34 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        final Display display = getWindowManager().getDefaultDisplay();
+//         Controller.initialize();
         
-        final ImageView picture = (ImageView)findViewById(R.id.picture);
+        Controller.display = getWindowManager().getDefaultDisplay();
+        Controller.picture = (ImageView)findViewById(R.id.picture);
+        Controller.debugOutput = (TextView)findViewById(R.id.debugOutput);
+        Controller.resetButton = (Button)findViewById(R.id.reset);
+        Controller.assetManager = getAssets();
         
-        final TextView debugOutput = (TextView)findViewById(R.id.debugOutput);
+        database.fill();
+        Projektor.start( database.maxRange / 3. );
+        Projektor.initialize() ;
+        Controller.picture.setImageBitmap( database.projection );
+        Projektor.toText() ;
+        database.lastKnown = Projektor.upDir ;
         
-        final Button resetButton = (Button)findViewById(R.id.reset);
-
-        final AssetManager assetManager = getAssets();
-        
-        resetButton.setOnClickListener(new View.OnClickListener() {
+        Controller.resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
             
-                raster.beob = new Punkt(0., 0., database.maxRange / 3., 0);
-                raster.forward = new Punkt(0., 0., -1, 0);
-                raster.upDir = new Punkt(0., 1., 0., 0);
-                
-                raster.initialize() ;
-            
-                picture.setImageBitmap( database.projection );
+                Projektor.start( database.maxRange / 3. );
+                Projektor.initialize() ;
+                Controller.picture.setImageBitmap( database.projection );
+                Projektor.toText() ;
                 
             }
         });
         
-        picture.setOnTouchListener( new View.OnTouchListener(){
+        Controller.picture.setOnTouchListener( new View.OnTouchListener(){
     
             @Override
             public boolean onTouch(View v, MotionEvent event){
@@ -688,239 +910,17 @@ public class MainActivity extends Activity {
                         break;
                 }
 
-                scale = new double[]{ 
-                                        database.currentTouch[0] - database.lastTouch[0] ,
-                                        database.currentTouch[1] - database.lastTouch[1]
-                                    } ;
-                                    
-                if( raster.upDir.norm() > OfUse.minimum ) database.lastKnown = raster.upDir ;
-
-                if( Math.abs( scale[0] ) > pixelThreshold || Math.abs( scale[1] ) > pixelThreshold ){
+                Projektor.rotateBYinput();
+                Controller.picture.setImageBitmap( database.projection );
+                Projektor.toText();
                 
-                    if( Math.abs( scale[0] ) < pixelThreshold / 2 ) scale[0] = 0 ;
-                    if( Math.abs( scale[1] ) < pixelThreshold / 2 ) scale[1] = 0 ;
-
-                    database.axis = raster.forward.cross( raster.upDir );
-                    database.axis.mult( Math.abs( scale[0] ) ) ;
-                    database.direction = raster.upDir.multNew( Math.abs( scale[1] ) ) ;
-//                     database.axis.mult( scale[0] ) ;
-//                     database.direction = raster.upDir.multNew( scale[1] ) ;
-                    database.direction = database.direction.adi( database.axis );
-                    database.direction = database.direction.normal() ;
-                    database.axis = raster.forward.cross( database.direction );
-                    
-                    ratio = Math.sqrt( scale[0] * scale[0] + scale[1] * scale[1] ) / database.imageScale ;
-                    
-                    if( scale[0] < 0. && scale[1] < 0. ) ratio *= -1. ;
-                    if( scale[0] > 0. && scale[1] > 0. ) ratio *=  1. ;
-                    
-                    if( scale[0] < 0. && scale[1] > 0. ){ 
-                        database.axis = database.axis.cross( raster.forward ).normal() ;
-                        ratio *=  1. ;
-                    }
-                    if( scale[0] > 0. && scale[1] < 0. ){ 
-                        database.axis = database.axis.cross( raster.forward ).normal() ;
-                        ratio *= -1. ;
-                    }
-                    
-                    if( scale[0] == 0 && scale[1] < 0 ) ratio *= -1. ;
-                    if( scale[1] == 0 && scale[0] < 0 ) ratio *= -1. ;
-                    
-                    if( database.axis.norm() > OfUse.minimum ){
-                    
-                        raster.rotatePos( database.axis , ratio * angleFactor );
-                        
-                        if( raster.upDir.norm() < OfUse.minimum ){ 
-                        
-                            raster.upDir = database.lastKnown ;
-                            raster.initialize() ;
-                            
-                        }
-            
-                        picture.setImageBitmap( database.projection );
-                        
-                    }
-                
-                    database.lastTouch = database.currentTouch ;
-                    
-                }
-                    
-                debugOutput.setText(
-                    String.format(
-                                    " beob ("+
-                                                "%1$.0f"+"|"+
-                                                "%2$.0f"+"|"+
-                                                "%3$.0f"+
-                                            ")"+
-                                    "\n"+
-                                    " forward ("+
-                                                "%4$ 3.2f"+"|"+
-                                                "%5$ 3.2f"+"|"+
-                                                "%6$ 3.2f"+
-                                            ")"+
-                                    "\n"+
-                                    " upDir ("+
-                                                "%7$ 3.2f"+"|"+
-                                                "%8$ 3.2f"+"|"+
-                                                "%9$ 3.2f"+
-                                            ")"+
-                                    "\n"+
-                                    " scale ("+
-                                                "%10$.0f"+"|"+
-                                                "%11$.0f"+
-                                            ")"
-                                    ,
-                                    raster.beob.koord[0]   , raster.beob.koord[1]   , raster.beob.koord[2]   ,
-                                    raster.forward.koord[0], raster.forward.koord[1], raster.forward.koord[2],
-                                    raster.upDir.koord[0]  , raster.upDir.koord[1]  , raster.upDir.koord[2],
-                                    scale[0]  , scale[1] 
-                                )
-                );
+                database.lastTouch = database.currentTouch ;
                     
                 return true;
                     
             }
             
         } );
-        
-        database.orte = new ArrayList< Punkt >();
-        database.extrema = new double[][] {
-                        { -1. , 1. } ,
-                        { -1. , 1. } ,
-                        { -1. , 1. }
-                    };
-        
-        try{
-            files = assetManager.list("");
-            counter = files.length;
-        }
-        catch(IOException e){
-            debugOutput.setText(
-                " can not read database "
-            );
-        }
-        
-        try{
-        
-            reader = new BufferedReader( new InputStreamReader( assetManager.open("stars.txt") ) );
-            
-            counter = 0;
-            while( ( line = reader.readLine() ) != null ){
-            
-                columns = line.split("\t");
-                if( columns.length < 4 ) continue;
-                
-                database.orte.add( new Punkt(
-                        Double.parseDouble( columns[1] ) ,
-                        Double.parseDouble( columns[2] ) ,
-                        Double.parseDouble( columns[3] ) ,
-                        Color.WHITE
-                    ) 
-                );
-                
-                if( counter < 1 ){
-                    database.extrema = new double[][] {
-                        { database.orte.get(counter).koord[0] , database.orte.get(counter).koord[0] } ,
-                        { database.orte.get(counter).koord[1] , database.orte.get(counter).koord[1] } ,
-                        { database.orte.get(counter).koord[2] , database.orte.get(counter).koord[2] }
-                    };
-                }
-                
-                for( coord=0 ; coord<3 ; coord++ ){
-                
-                    if( database.extrema[coord][0] > database.orte.get(counter).koord[coord] )
-                        database.extrema[coord][0] = database.orte.get(counter).koord[coord] ;
-                    
-                    if( database.extrema[coord][1] < database.orte.get(counter).koord[coord] )
-                        database.extrema[coord][1] = database.orte.get(counter).koord[coord] ;
-                        
-                }
-                
-                counter++;
-                
-            }
-            
-        }
-        catch(IOException e){
-            for(index=0; index<counter; index++){
-                line += files[index];
-                line += "\n";
-            }
-            debugOutput.setText(
-                " can not read database "
-                +
-                " #files : "
-                +
-                counter.toString()
-                +
-                "\n"
-                +
-                line
-            );
-        }
-        
-        if( counter > 500 ){
-
-            database.maxRange = database.extrema[0][1] - database.extrema[0][0] ;
-            for( index=1; index<3; index++ ){
-                if( database.extrema[index][1] - database.extrema[index][0] > database.maxRange )
-                    database.maxRange = database.extrema[index][1] - database.extrema[index][0] ;
-            }
-                    
-            display.getSize(dot);
-            database.imageSize = new int[]{ (int)( (double)dot.x / 0.75 ) , dot.y };
-            
-//             database.imageSize = new int[]{
-//                                                 picture.getMeasuredWidth() ,
-//                                                 picture.getMeasuredHeight() 
-//                                             };
-                                            
-            database.imageScale = database.imageSize[0] ;
-            if( database.imageScale > database.imageSize[1] ) 
-                database.imageScale = database.imageSize[1] ;            
-                
-            debugOutput.setText(
-                                    " width "
-                                    +
-                                    database.imageSize[0]
-                                    +
-                                    " | "
-                                    +
-                                    " height "
-                                    +
-                                    database.imageSize[1]
-                                );
-    
-            database.projection = Bitmap.createBitmap( 
-                                                database.imageSize[0], 
-                                                database.imageSize[1], 
-                                                Bitmap.Config.ARGB_8888
-                                            );    
-                                            
-            database.emptyImage = database.projection.copy( database.projection.getConfig() , true ) ;
-            
-            for(x=0; x<database.imageSize[0]; x++){
-                database.emptyImage.setPixel( x , 0 , Color.BLUE );
-                database.emptyImage.setPixel( x , database.imageSize[1]-1 , Color.BLUE );
-            }
-            for(y=0; y<database.imageSize[1]; y++){
-                database.emptyImage.setPixel( 0 , y , Color.BLUE );
-                database.emptyImage.setPixel( database.imageSize[0]-1 , y , Color.BLUE );
-            }
-        
-            raster = new Projektor(
-                database.maxRange / 3. ,
-                new Punkt( 0. , 0. , database.maxRange / 3. , 0 ) ,
-                new Punkt( 0. , 0. , -1. , 0 ) ,
-                new Punkt( 0. , 1. , 0. , 0 ) 
-            );
-        
-            raster.initialize();
-            database.lastKnown = raster.upDir ;
-            
-            picture.setImageBitmap( database.projection );
-        
-        }
         
     }
 }
