@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.File;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -360,6 +361,9 @@ class database{
     public static double maxRange ;
     public static int[] lastTouch ;
     public static int[] currentTouch ;
+    public static int[] pointerIDs ;
+    
+    public static int[][] multiTouch ;
     
     public static Punkt axis ;
     public static Punkt direction ;
@@ -519,6 +523,41 @@ class database{
         
     }
     
+    static void toText(){
+//         Controller.debugOutput.setText("");
+//         for(int p=0; p<pointerIDs.length; p++){
+//             Controller.debugOutput.setText(
+//                 Controller.debugOutput.getText()
+//                 +"\n"+
+//                 " pointer "+pointerIDs[p]+" at "
+//                 +"("
+//                     +currentTouch[p+(p%2)+0]
+//                     +"|"
+//                     +currentTouch[p+(p%2)+1]
+//                 +")"
+//             );
+//         }
+//         Controller.debugOutput.setText(pointerIDs.length+" "+currentTouch.length);
+        Controller.debugOutput.setText("");
+        for(int p=0; p<multiTouch.length; p++){
+            Controller.debugOutput.setText(
+                Controller.debugOutput.getText()
+                +"\n"+
+                multiTouch[p][0]
+                +" ("
+                    +multiTouch[p][1]
+                    +"|"
+                    +multiTouch[p][2]
+                +") - ("
+                    +
+                    +multiTouch[p][3]
+                    +"|"
+                    +multiTouch[p][4]
+                +")"
+            );
+        }
+    }
+    
 }
 
 class Projektor{
@@ -543,8 +582,8 @@ class Projektor{
         ///////////////////////////////define variables/////////////////////////////////////////////
         double rx, ry, rz;
         int rc;
-        double near = bereich / 100;
-        double far = 2. * bereich ;
+        double near = bereich / 100.;
+        double far = 3. * bereich ;
         double oefwin = 120.*Math.PI/180./2.;
         double ow = 0.;
         double setver = 1.;
@@ -610,7 +649,8 @@ class Projektor{
         for(int k=0; k<database.orte.size(); k++){
             win = forward.winkel( database.orte.get(k).subt( beob ) );
             distance = database.orte.get(k).dist( beob );
-            if( ( distance >= near && distance <= far ) && win >= wver ){
+//             if( ( distance >= near && distance <= far ) && win >= wver ){
+            if( distance >= near ){
                 //Kamtrafo und Projektion
                 for(int i=0; i<4; i++){
                     if(i<3){homCoord[i]=database.orte.get(k).koord[i];}
@@ -808,6 +848,41 @@ class Projektor{
         }
         
     }
+    public static void multiInput(){
+
+        double[] distances = new double[]{ 
+            Math.sqrt(
+                Math.pow( database.multiTouch[0][1] - database.multiTouch[1][1] , 2 )
+                +
+                Math.pow( database.multiTouch[0][2] - database.multiTouch[1][2] , 2 )
+            )
+            ,
+            Math.sqrt(
+                Math.pow( database.multiTouch[0][3] - database.multiTouch[1][4] , 2 )
+                +
+                Math.pow( database.multiTouch[0][4] - database.multiTouch[1][4] , 2 )
+            )
+        } ;
+        
+        double[] movement = new double[]{
+            0.5 * ( database.multiTouch[0][1] + database.multiTouch[1][1] )
+            -
+            0.5 * ( database.multiTouch[0][3] + database.multiTouch[1][3] )
+            ,
+            0.5 * ( database.multiTouch[0][2] + database.multiTouch[1][2] )
+            -
+            0.5 * ( database.multiTouch[0][4] + database.multiTouch[1][4] )
+        };
+        
+        if( Math.abs( distances[0] - distances[1] ) > OfUse.pixelThreshold ){
+            
+            beob = beob.adi( forward.multNew( (distances[1]-distances[0])/distances[1] ) ); 
+            bereich *= ( 1. - (distances[1]-distances[0])/distances[1] ) ;
+            initialize() ;
+            
+        }
+                            
+    }
     public static void toText(){
                     
         Controller.debugOutput.setText(
@@ -850,6 +925,9 @@ class Projektor{
 
 public class MainActivity extends Activity {
 
+    static int identification , position , index ;
+    static boolean toDraw ;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -870,6 +948,7 @@ public class MainActivity extends Activity {
         Controller.picture.setImageBitmap( database.projection );
         Projektor.toText() ;
         database.lastKnown = Projektor.upDir ;
+        database.multiTouch = new int[][]{} ;
         
         Controller.resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -888,33 +967,202 @@ public class MainActivity extends Activity {
             @Override
             public boolean onTouch(View v, MotionEvent event){
                     
-                database.currentTouch = new int[]{
-                    (int)event.getX() ,
-                    (int)event.getY()
-                };
-                
-                switch( event.getAction() ){
-                
-                    case MotionEvent.ACTION_DOWN:
-                    
-                        database.lastTouch = database.currentTouch ;
-                        
-                        break;
-                        
-                    case MotionEvent.ACTION_MOVE:
-                        
-                        break;
-                        
-                    case MotionEvent.ACTION_UP:
-                        
-                        break;
-                }
+                if( event.getPointerCount() == 1 ){
 
-                Projektor.rotateBYinput();
-                Controller.picture.setImageBitmap( database.projection );
-                Projektor.toText();
+                    database.currentTouch = new int[]{
+                        (int)event.getX() ,
+                        (int)event.getY()
+                    };
+                    database.multiTouch = new int[][]{} ;
+                    
+                    switch( event.getAction() ){
+                    
+                        case MotionEvent.ACTION_DOWN:
+                        
+                            database.lastTouch = database.currentTouch ;
+                            
+//                             database.pointerIDs = new int[]{
+//                                 event.getPointerId(0)
+//                             };
+                            
+                            break;
+                            
+                        case MotionEvent.ACTION_MOVE:
+                            
+                            break;
+                            
+                        case MotionEvent.ACTION_UP:
+                            
+                            break;
+                    }
+
+                    Projektor.rotateBYinput();
+//                     Controller.picture.setImageBitmap( database.projection );
+//                     Projektor.toText();
+
+                    database.lastTouch = database.currentTouch ;
                 
-                database.lastTouch = database.currentTouch ;
+                }
+                else{
+                
+                    if( database.multiTouch.length < 2 && event.getPointerCount() == 2 ){
+                        database.multiTouch = new int[][]{ new int[5] , new int[5] } ;
+                        for( index=0 ; index<2 ; index++ ){
+                            database.multiTouch[index] = new int[]{
+                                event.getPointerId(index) ,
+                                (int)event.getX(index) ,
+                                (int)event.getY(index) ,
+                                (int)event.getX(index) ,
+                                (int)event.getY(index) 
+                            } ;
+                        }
+                    }
+                    else{
+                        for( index=0 ; index<event.getPointerCount() ; index++ ){
+                            position = 2 ;
+                            identification = event.getPointerId(index) ;
+                            if( database.multiTouch[0][0] == identification ) position = 0 ;
+                            else if( database.multiTouch[1][0] == identification ) position = 1 ;
+                            if( position < 2 ){
+                                database.multiTouch[position] = new int[]{
+                                    identification ,
+                                    (int)event.getX(index) ,
+                                    (int)event.getY(index) ,
+                                    database.multiTouch[position][1] ,
+                                    database.multiTouch[position][2] 
+                                } ;
+                            }
+                        }
+                    }
+                
+                    index = event.getActionIndex() ;
+                    identification = event.getPointerId( index ) ;
+                    toDraw = false ;
+                    
+                    switch( event.getAction() ){
+                    
+                        case MotionEvent.ACTION_POINTER_DOWN:
+                            
+                            break;
+                            
+                        case MotionEvent.ACTION_MOVE:
+                        
+                            toDraw = true ;
+                            
+                            break;
+                            
+                        case MotionEvent.ACTION_POINTER_UP:
+                        
+                            position = 2 ;
+                            if( database.multiTouch[0][0] == identification ) position = 0 ;
+                            else if( database.multiTouch[1][0] == identification ) position = 1 ;
+                            
+                            if( position < 2 ){
+                                database.multiTouch = new int[][]{} ;
+                            }
+                            
+                            break;
+                    }
+                    
+                    if( toDraw ){
+                        Projektor.multiInput() ;
+                    }
+                
+//                     index = event.getActionIndex() ;
+//                     identification = event.getPointerId( index ) ;
+//                     
+//                     switch( event.getAction() ){
+//                     
+//                         case MotionEvent.ACTION_POINTER_DOWN:
+//                             
+//                             if( database.pointerIDs.length == 1 ){
+//                             
+//                                 database.pointerIDs = new int[]{
+//                                     database.pointerIDs[0] ,
+//                                     identification
+//                                 };
+//                             
+//                                 database.currentTouch = new int[]{
+//                                     database.lastTouch[0] ,
+//                                     database.lastTouch[1] ,
+//                                     (int)event.getX( index ) ,
+//                                     (int)event.getY( index )
+//                                     
+//                                 };
+//                                 
+//                             }
+//                             
+//                             break;
+//                             
+//                         case MotionEvent.ACTION_MOVE:
+//                         
+//                             if( database.pointerIDs.length == 1 && event.getPointerCount() == 2 ){
+//                                 
+//                                 if( event.getPointerId(0) == database.pointerIDs[0] ) 
+//                                     identification = event.getPointerId(1) ;
+//                                 else 
+//                                     identification = event.getPointerId(0) ;
+//                             
+//                                 database.pointerIDs = new int[]{
+//                                     database.pointerIDs[0] ,
+//                                     identification
+//                                 };
+//                                 
+//                                 database.currentTouch = new int[]{0,0,0,0} ;
+//                                 
+//                             }
+//                             
+//                             if( database.pointerIDs.length < 2 ) break ;
+//                         
+//                             for( index=0 ; index<event.getPointerCount() ; index++ ){
+//                                 
+//                                 identification = event.getPointerId(index) ;
+//                                 position = 2 ;
+//                                 
+//                                 if( database.pointerIDs[0] == identification ) position = 1 ;
+//                                 else if( database.pointerIDs[1] == identification ) position = 0 ;
+//                                 
+//                                 if( position < 2 ){
+//                             
+//                                     database.currentTouch[position+(position%2)+0] = (int)event.getX( index ) ;
+//                                     database.currentTouch[position+(position%2)+1] = (int)event.getY( index ) ;
+//                                     
+//                                 }
+//                             
+//                             }
+//                             
+//                             break;
+//                             
+//                         case MotionEvent.ACTION_POINTER_UP:
+//                         
+//                             if( database.pointerIDs.length < 2 ) break ;
+//                             
+//                             position = 2 ;
+//                             
+//                             if( database.pointerIDs[0] == identification ) position = 1 ;
+//                             else if( database.pointerIDs[1] == identification ) position = 0 ;
+//                             
+//                             Controller.debugOutput.setText(database.pointerIDs[0]+" "+database.pointerIDs[1]+" "+position);
+//                             
+//                             if( position < 2 ){
+//                             
+//                                 database.pointerIDs = new int[]{
+//                                     database.pointerIDs[position] 
+//                                 };
+//                         
+//                                 database.currentTouch = new int[]{
+//                                     database.lastTouch[position+(position%2)+0] ,
+//                                     database.lastTouch[position+(position%2)+1]
+//                                 };
+//                                 
+//                             }
+//                             
+//                             break;
+//                     }
+                    
+                }
+                
+                Projektor.toText();
                     
                 return true;
                     
