@@ -841,7 +841,7 @@ class Projektor{
                     
                 }
     
-                Controller.picture.setImageBitmap( database.projection );
+//                 Controller.picture.setImageBitmap( database.projection );
                 
             }
             
@@ -876,7 +876,7 @@ class Projektor{
         
         if( Math.abs( distances[0] - distances[1] ) > OfUse.pixelThreshold ){
             
-            beob = beob.adi( forward.multNew( (distances[1]-distances[0])/distances[1] ) ); 
+            beob = beob.adi( forward.multNew( bereich*(distances[1]-distances[0])/distances[1] ) ); 
             bereich *= ( 1. - (distances[1]-distances[0])/distances[1] ) ;
             initialize() ;
             
@@ -997,7 +997,7 @@ public class MainActivity extends Activity {
                     }
 
                     Projektor.rotateBYinput();
-//                     Controller.picture.setImageBitmap( database.projection );
+                    Controller.picture.setImageBitmap( database.projection );
 //                     Projektor.toText();
 
                     database.lastTouch = database.currentTouch ;
@@ -1066,6 +1066,7 @@ public class MainActivity extends Activity {
                     
                     if( toDraw ){
                         Projektor.multiInput() ;
+                        Controller.picture.setImageBitmap( database.projection );
                     }
                 
 //                     index = event.getActionIndex() ;
