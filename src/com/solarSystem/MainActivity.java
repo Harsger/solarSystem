@@ -359,11 +359,9 @@ class database{
     
     public static double[][] extrema ;
     public static double maxRange ;
-    public static int[] lastTouch ;
-    public static int[] currentTouch ;
-    public static int[] pointerIDs ;
     
-    public static int[][] multiTouch ;
+    public static ArrayList< Punkt > currentTouch = new ArrayList<Punkt>();
+    public static ArrayList< Punkt > lastTouch = new ArrayList<Punkt>();
     
     public static Punkt axis ;
     public static Punkt direction ;
@@ -371,6 +369,7 @@ class database{
     
     public static int[] imageSize;
     public static int imageScale;
+    public static double imageDiagonal;
     public static Bitmap projection ;
     public static Bitmap emptyImage ;
     
@@ -485,6 +484,8 @@ class database{
 //                                                 Controller.picture.getMeasuredWidth() ,
 //                                                 Controller.picture.getMeasuredHeight() 
 //                                             };
+            
+            imageDiagonal = Math.sqrt( imageSize[0] * imageSize[0] + imageSize[1] * imageSize[1] );
                                             
             imageScale = imageSize[0] ;
             if( imageScale > imageSize[1] ) 
@@ -523,36 +524,53 @@ class database{
         
     }
     
+    static void currentTOlast(){
+        lastTouch.clear() ;
+        for(int t=0; t<currentTouch.size(); t++){
+            lastTouch.add( new Punkt(
+                currentTouch.get(t).koord[0] ,
+                currentTouch.get(t).koord[1] ,
+                currentTouch.get(t).koord[2] ,
+                currentTouch.get(t).col
+            ) );
+        }
+    }
+    
+    static void lastTOcurrent(){
+        currentTouch.clear() ;
+        for(int t=0; t<lastTouch.size(); t++){
+            currentTouch.add( new Punkt(
+                lastTouch.get(t).koord[0] ,
+                lastTouch.get(t).koord[1] ,
+                lastTouch.get(t).koord[2] ,
+                lastTouch.get(t).col
+            ) );
+        }
+    }
+    
     static void toText(){
-//         Controller.debugOutput.setText("");
-//         for(int p=0; p<pointerIDs.length; p++){
-//             Controller.debugOutput.setText(
-//                 Controller.debugOutput.getText()
-//                 +"\n"+
-//                 " pointer "+pointerIDs[p]+" at "
-//                 +"("
-//                     +currentTouch[p+(p%2)+0]
-//                     +"|"
-//                     +currentTouch[p+(p%2)+1]
-//                 +")"
-//             );
-//         }
-//         Controller.debugOutput.setText(pointerIDs.length+" "+currentTouch.length);
         Controller.debugOutput.setText("");
-        for(int p=0; p<multiTouch.length; p++){
+        for(int p=0; p<currentTouch.size(); p++){
             Controller.debugOutput.setText(
                 Controller.debugOutput.getText()
                 +"\n"+
-                multiTouch[p][0]
-                +" ("
-                    +multiTouch[p][1]
+                " current "+currentTouch.get(p).col+" at "
+                +"("
+                    +(int)currentTouch.get(p).koord[0]
                     +"|"
-                    +multiTouch[p][2]
-                +") - ("
-                    +
-                    +multiTouch[p][3]
+                    +(int)currentTouch.get(p).koord[1]
+                +")"
+            );
+        }
+        for(int p=0; p<lastTouch.size(); p++){
+            Controller.debugOutput.setText(
+                Controller.debugOutput.getText()
+                +"\n"+
+                " last "+lastTouch.get(p).col+" at "
+                +"("
+                    +(int)lastTouch.get(p).koord[0]
                     +"|"
-                    +multiTouch[p][4]
+                    +(int)lastTouch.get(p).koord[1]
                 +")"
             );
         }
@@ -793,8 +811,8 @@ class Projektor{
     public static void rotateBYinput(){
 
         double[] scale = new double[]{ 
-                                database.currentTouch[0] - database.lastTouch[0] ,
-                                database.currentTouch[1] - database.lastTouch[1]
+                                database.currentTouch.get(0).koord[0] - database.lastTouch.get(0).koord[0] ,
+                                database.currentTouch.get(0).koord[1] - database.lastTouch.get(0).koord[1]
                             } ;
                             
         if( upDir.norm() > OfUse.minimum ) database.lastKnown = upDir ;
@@ -851,33 +869,26 @@ class Projektor{
     public static void multiInput(){
 
         double[] distances = new double[]{ 
-            Math.sqrt(
-                Math.pow( database.multiTouch[0][1] - database.multiTouch[1][1] , 2 )
-                +
-                Math.pow( database.multiTouch[0][2] - database.multiTouch[1][2] , 2 )
-            )
-            ,
-            Math.sqrt(
-                Math.pow( database.multiTouch[0][3] - database.multiTouch[1][4] , 2 )
-                +
-                Math.pow( database.multiTouch[0][4] - database.multiTouch[1][4] , 2 )
-            )
+            database.currentTouch.get(0).subt( database.lastTouch.get(0) ).norm() ,
+            database.currentTouch.get(1).subt( database.lastTouch.get(1) ).norm() 
         } ;
         
-        double[] movement = new double[]{
-            0.5 * ( database.multiTouch[0][1] + database.multiTouch[1][1] )
-            -
-            0.5 * ( database.multiTouch[0][3] + database.multiTouch[1][3] )
-            ,
-            0.5 * ( database.multiTouch[0][2] + database.multiTouch[1][2] )
-            -
-            0.5 * ( database.multiTouch[0][4] + database.multiTouch[1][4] )
-        };
+        Punkt currentMean = database.currentTouch.get(0).adi( database.currentTouch.get(1) ).multNew(0.5) ;
+        Punkt lastMean = database.lastTouch.get(0).adi( database.lastTouch.get(1) ).multNew(0.5) ;
         
-        if( Math.abs( distances[0] - distances[1] ) > OfUse.pixelThreshold ){
+        Punkt moved = currentMean.subt( lastMean ) ;
+        
+        double scaling = ( distances[0] - distances[1] ) / database.imageDiagonal ;
+        
+        Controller.debugOutput.setText( String.format(
+            " "+"%1$.0f"+" & "+"%2$.0f"+" -> "+"%3$.2f"+" : "+"%4$.0f" , 
+            distances[1] , distances[0] , scaling , moved.norm()
+        ) );
+        
+        if( Math.abs( distances[0] - distances[1] ) > 3. && scaling < 1. ){
             
-            beob = beob.adi( forward.multNew( bereich*(distances[1]-distances[0])/distances[1] ) ); 
-            bereich *= ( 1. - (distances[1]-distances[0])/distances[1] ) ;
+            beob = beob.adi( forward.multNew( bereich * scaling ) ); 
+            bereich *= ( 1. - scaling ) ;
             initialize() ;
             
         }
@@ -904,19 +915,10 @@ class Projektor{
                                         "%8$ 3.2f"+"|"+
                                         "%9$ 3.2f"+
                                     ")"
-//                             +
-//                             "\n"+
-//                             " scale ("+
-//                                         "%10$.0f"+"|"+
-//                                         "%11$.0f"+
-//                                     ")"
                             ,
                             beob.koord[0]   , beob.koord[1]   , beob.koord[2]   ,
                             forward.koord[0], forward.koord[1], forward.koord[2],
                             upDir.koord[0]  , upDir.koord[1]  , upDir.koord[2]
-//                             ,
-//                             database.currentTouch[0] - database.lastTouch[0] ,
-//                             database.currentTouch[1] - database.lastTouch[1]
                         )
         );
                 
@@ -946,9 +948,8 @@ public class MainActivity extends Activity {
         Projektor.start( database.maxRange / 3. );
         Projektor.initialize() ;
         Controller.picture.setImageBitmap( database.projection );
-        Projektor.toText() ;
+//         Projektor.toText() ;
         database.lastKnown = Projektor.upDir ;
-        database.multiTouch = new int[][]{} ;
         
         Controller.resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -957,7 +958,7 @@ public class MainActivity extends Activity {
                 Projektor.start( database.maxRange / 3. );
                 Projektor.initialize() ;
                 Controller.picture.setImageBitmap( database.projection );
-                Projektor.toText() ;
+//                 Projektor.toText() ;
                 
             }
         });
@@ -967,23 +968,22 @@ public class MainActivity extends Activity {
             @Override
             public boolean onTouch(View v, MotionEvent event){
                     
+                database.currentTouch.clear() ;
+                    
                 if( event.getPointerCount() == 1 ){
-
-                    database.currentTouch = new int[]{
-                        (int)event.getX() ,
-                        (int)event.getY()
-                    };
-                    database.multiTouch = new int[][]{} ;
+                
+                    database.currentTouch.add( new Punkt(
+                        event.getX() ,
+                        event.getY() ,
+                        0. , 
+                        event.getPointerId(0)
+                    ) );
                     
                     switch( event.getAction() ){
                     
                         case MotionEvent.ACTION_DOWN:
                         
-                            database.lastTouch = database.currentTouch ;
-                            
-//                             database.pointerIDs = new int[]{
-//                                 event.getPointerId(0)
-//                             };
+                            database.currentTOlast() ;
                             
                             break;
                             
@@ -999,38 +999,35 @@ public class MainActivity extends Activity {
                     Projektor.rotateBYinput();
                     Controller.picture.setImageBitmap( database.projection );
 //                     Projektor.toText();
-
-                    database.lastTouch = database.currentTouch ;
                 
                 }
                 else{
                 
-                    if( database.multiTouch.length < 2 && event.getPointerCount() == 2 ){
-                        database.multiTouch = new int[][]{ new int[5] , new int[5] } ;
+                    if( database.lastTouch.size() < 2 && event.getPointerCount() == 2 ){
                         for( index=0 ; index<2 ; index++ ){
-                            database.multiTouch[index] = new int[]{
-                                event.getPointerId(index) ,
-                                (int)event.getX(index) ,
-                                (int)event.getY(index) ,
-                                (int)event.getX(index) ,
-                                (int)event.getY(index) 
-                            } ;
+                            database.currentTouch.add( new Punkt(
+                                event.getX(index) ,
+                                event.getY(index) ,
+                                0. ,
+                                event.getPointerId(index)
+                            ) ) ;
                         }
+                        database.currentTOlast() ;
                     }
                     else{
+                        database.lastTOcurrent() ;
                         for( index=0 ; index<event.getPointerCount() ; index++ ){
                             position = 2 ;
                             identification = event.getPointerId(index) ;
-                            if( database.multiTouch[0][0] == identification ) position = 0 ;
-                            else if( database.multiTouch[1][0] == identification ) position = 1 ;
+                            if( database.lastTouch.get(0).col == identification ) position = 0 ;
+                            else if( database.lastTouch.get(1).col == identification ) position = 1 ;
                             if( position < 2 ){
-                                database.multiTouch[position] = new int[]{
-                                    identification ,
-                                    (int)event.getX(index) ,
-                                    (int)event.getY(index) ,
-                                    database.multiTouch[position][1] ,
-                                    database.multiTouch[position][2] 
-                                } ;
+                                database.currentTouch.set( position , new Punkt(
+                                    event.getX(index) ,
+                                    event.getY(index) ,
+                                    0. ,
+                                    identification
+                                ) ) ;
                             }
                         }
                     }
@@ -1054,11 +1051,12 @@ public class MainActivity extends Activity {
                         case MotionEvent.ACTION_POINTER_UP:
                         
                             position = 2 ;
-                            if( database.multiTouch[0][0] == identification ) position = 0 ;
-                            else if( database.multiTouch[1][0] == identification ) position = 1 ;
+                            if( database.lastTouch.get(0).col == identification ) position = 0 ;
+                            else if( database.lastTouch.get(1).col == identification ) position = 1 ;
                             
                             if( position < 2 ){
-                                database.multiTouch = new int[][]{} ;
+                                database.lastTouch.remove(position) ;
+                                database.currentTouch.remove(position) ;
                             }
                             
                             break;
@@ -1068,102 +1066,14 @@ public class MainActivity extends Activity {
                         Projektor.multiInput() ;
                         Controller.picture.setImageBitmap( database.projection );
                     }
-                
-//                     index = event.getActionIndex() ;
-//                     identification = event.getPointerId( index ) ;
-//                     
-//                     switch( event.getAction() ){
-//                     
-//                         case MotionEvent.ACTION_POINTER_DOWN:
-//                             
-//                             if( database.pointerIDs.length == 1 ){
-//                             
-//                                 database.pointerIDs = new int[]{
-//                                     database.pointerIDs[0] ,
-//                                     identification
-//                                 };
-//                             
-//                                 database.currentTouch = new int[]{
-//                                     database.lastTouch[0] ,
-//                                     database.lastTouch[1] ,
-//                                     (int)event.getX( index ) ,
-//                                     (int)event.getY( index )
-//                                     
-//                                 };
-//                                 
-//                             }
-//                             
-//                             break;
-//                             
-//                         case MotionEvent.ACTION_MOVE:
-//                         
-//                             if( database.pointerIDs.length == 1 && event.getPointerCount() == 2 ){
-//                                 
-//                                 if( event.getPointerId(0) == database.pointerIDs[0] ) 
-//                                     identification = event.getPointerId(1) ;
-//                                 else 
-//                                     identification = event.getPointerId(0) ;
-//                             
-//                                 database.pointerIDs = new int[]{
-//                                     database.pointerIDs[0] ,
-//                                     identification
-//                                 };
-//                                 
-//                                 database.currentTouch = new int[]{0,0,0,0} ;
-//                                 
-//                             }
-//                             
-//                             if( database.pointerIDs.length < 2 ) break ;
-//                         
-//                             for( index=0 ; index<event.getPointerCount() ; index++ ){
-//                                 
-//                                 identification = event.getPointerId(index) ;
-//                                 position = 2 ;
-//                                 
-//                                 if( database.pointerIDs[0] == identification ) position = 1 ;
-//                                 else if( database.pointerIDs[1] == identification ) position = 0 ;
-//                                 
-//                                 if( position < 2 ){
-//                             
-//                                     database.currentTouch[position+(position%2)+0] = (int)event.getX( index ) ;
-//                                     database.currentTouch[position+(position%2)+1] = (int)event.getY( index ) ;
-//                                     
-//                                 }
-//                             
-//                             }
-//                             
-//                             break;
-//                             
-//                         case MotionEvent.ACTION_POINTER_UP:
-//                         
-//                             if( database.pointerIDs.length < 2 ) break ;
-//                             
-//                             position = 2 ;
-//                             
-//                             if( database.pointerIDs[0] == identification ) position = 1 ;
-//                             else if( database.pointerIDs[1] == identification ) position = 0 ;
-//                             
-//                             Controller.debugOutput.setText(database.pointerIDs[0]+" "+database.pointerIDs[1]+" "+position);
-//                             
-//                             if( position < 2 ){
-//                             
-//                                 database.pointerIDs = new int[]{
-//                                     database.pointerIDs[position] 
-//                                 };
-//                         
-//                                 database.currentTouch = new int[]{
-//                                     database.lastTouch[position+(position%2)+0] ,
-//                                     database.lastTouch[position+(position%2)+1]
-//                                 };
-//                                 
-//                             }
-//                             
-//                             break;
-//                     }
                     
                 }
                 
-                Projektor.toText();
+//                 database.toText();
+                
+                database.currentTOlast() ;
+                
+//                 Projektor.toText();
                     
                 return true;
                     
