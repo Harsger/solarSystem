@@ -49,7 +49,7 @@ class OfUse{
     public static double maximum = Math.pow(10,6);
     public static double minimum = Math.pow(10,-12);
     public static double angleFactor = - Math.PI * 0.3 / Math.sqrt(2.) ;
-    public static double pixelThreshold = 10. ;
+    public static double pixelThreshold = 5. ;
 }
 
 class Dot{
@@ -808,7 +808,7 @@ class Projektor{
         beob = beob.adi(step);
         initialize();
     }
-    public static void rotateBYinput(){
+    public static void singleInput(){
 
         double[] scale = new double[]{ 
                                 database.currentTouch.get(0).koord[0] - database.lastTouch.get(0).koord[0] ,
@@ -866,11 +866,11 @@ class Projektor{
         }
         
     }
-    public static void multiInput(){
-
+    public static boolean multiInput(){
+        
         double[] distances = new double[]{ 
-            database.currentTouch.get(0).subt( database.lastTouch.get(0) ).norm() ,
-            database.currentTouch.get(1).subt( database.lastTouch.get(1) ).norm() 
+            database.currentTouch.get(0).subt( database.currentTouch.get(1) ).norm() ,
+            database.lastTouch.get(0).subt( database.lastTouch.get(1) ).norm() 
         } ;
         
         Punkt currentMean = database.currentTouch.get(0).adi( database.currentTouch.get(1) ).multNew(0.5) ;
@@ -878,39 +878,43 @@ class Projektor{
         
         Punkt moved = currentMean.subt( lastMean ) ;
         
-        double scaling = ( distances[0] - distances[1] ) / database.imageDiagonal ;
+//         double scaling = ( distances[0] - distances[1] ) / database.imageDiagonal ;
+        double scaling = ( distances[0] - distances[1] ) / distances[1] ;
         
-        Controller.debugOutput.setText( String.format(
-            " "+"%1$.0f"+" & "+"%2$.0f"+" -> "+"%3$.2f"+" : "+"%4$.0f" , 
-            distances[1] , distances[0] , scaling , moved.norm()
-        ) );
+//         Controller.debugOutput.setText( String.format(
+//             " "+"%1$.0f"+" & "+"%2$.0f"+" -> "+"%3$.2f"+" : "+"%4$.0f" , 
+//             distances[1] , distances[0] , scaling , moved.norm()
+//         ) );
         
-        if( Math.abs( distances[0] - distances[1] ) > 3. && scaling < 1. ){
+        if( Math.abs( distances[0] - distances[1] ) > OfUse.pixelThreshold ){
             
             beob = beob.adi( forward.multNew( bereich * scaling ) ); 
             bereich *= ( 1. - scaling ) ;
             initialize() ;
             
         }
+        else return false ;
+        
+        return true ;
                             
     }
     public static void toText(){
                     
         Controller.debugOutput.setText(
             String.format(
-                            " beob ("+
+                            " + ("+
                                         "%1$.0f"+"|"+
                                         "%2$.0f"+"|"+
                                         "%3$.0f"+
                                     ")"+
                             "\n"+
-                            " forward ("+
+                            " > ("+
                                         "%4$ 3.2f"+"|"+
                                         "%5$ 3.2f"+"|"+
                                         "%6$ 3.2f"+
                                     ")"+
                             "\n"+
-                            " upDir ("+
+                            " ^ ("+
                                         "%7$ 3.2f"+"|"+
                                         "%8$ 3.2f"+"|"+
                                         "%9$ 3.2f"+
@@ -928,7 +932,7 @@ class Projektor{
 public class MainActivity extends Activity {
 
     static int identification , position , index ;
-    static boolean toDraw ;
+    static boolean toDraw , overwrite ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -967,6 +971,9 @@ public class MainActivity extends Activity {
     
             @Override
             public boolean onTouch(View v, MotionEvent event){
+            
+                toDraw = false ;
+                overwrite = true ;
                     
                 database.currentTouch.clear() ;
                     
@@ -982,28 +989,25 @@ public class MainActivity extends Activity {
                     switch( event.getAction() ){
                     
                         case MotionEvent.ACTION_DOWN:
-                        
-                            database.currentTOlast() ;
-                            
                             break;
                             
                         case MotionEvent.ACTION_MOVE:
-                            
+                            Projektor.singleInput();
+                            toDraw = true;
                             break;
                             
                         case MotionEvent.ACTION_UP:
-                            
+                            Projektor.singleInput();
+                            toDraw = true;
                             break;
+                            
                     }
-
-                    Projektor.rotateBYinput();
-                    Controller.picture.setImageBitmap( database.projection );
-//                     Projektor.toText();
                 
                 }
                 else{
                 
                     if( database.lastTouch.size() < 2 && event.getPointerCount() == 2 ){
+                    
                         for( index=0 ; index<2 ; index++ ){
                             database.currentTouch.add( new Punkt(
                                 event.getX(index) ,
@@ -1013,8 +1017,10 @@ public class MainActivity extends Activity {
                             ) ) ;
                         }
                         database.currentTOlast() ;
+                        
                     }
                     else{
+                    
                         database.lastTOcurrent() ;
                         for( index=0 ; index<event.getPointerCount() ; index++ ){
                             position = 2 ;
@@ -1030,25 +1036,23 @@ public class MainActivity extends Activity {
                                 ) ) ;
                             }
                         }
+                        
                     }
-                
-                    index = event.getActionIndex() ;
-                    identification = event.getPointerId( index ) ;
-                    toDraw = false ;
                     
                     switch( event.getAction() ){
                     
                         case MotionEvent.ACTION_POINTER_DOWN:
-                            
                             break;
                             
                         case MotionEvent.ACTION_MOVE:
-                        
+                            overwrite = Projektor.multiInput() ;
                             toDraw = true ;
-                            
                             break;
                             
                         case MotionEvent.ACTION_POINTER_UP:
+                
+                            index = event.getActionIndex() ;
+                            identification = event.getPointerId( index ) ;
                         
                             position = 2 ;
                             if( database.lastTouch.get(0).col == identification ) position = 0 ;
@@ -1060,20 +1064,16 @@ public class MainActivity extends Activity {
                             }
                             
                             break;
-                    }
-                    
-                    if( toDraw ){
-                        Projektor.multiInput() ;
-                        Controller.picture.setImageBitmap( database.projection );
+                            
                     }
                     
                 }
                 
-//                 database.toText();
+                    Projektor.toText();
+//                     database.toText();
                 
-                database.currentTOlast() ;
-                
-//                 Projektor.toText();
+                if( toDraw ) Controller.picture.setImageBitmap( database.projection );
+                if( overwrite ) database.currentTOlast() ;
                     
                 return true;
                     
