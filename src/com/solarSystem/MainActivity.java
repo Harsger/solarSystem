@@ -893,6 +893,15 @@ class Projektor{
             initialize() ;
             
         }
+        else if( moved.norm() > OfUse.pixelThreshold ){
+            
+            Punkt toMove = upDir.multNew( moved.koord[1] )
+                                .adi( upDir.cross( forward ).multNew( -moved.koord[0] ) ) ;
+            toMove.mult( bereich / database.imageDiagonal ) ;
+            beob = beob.adi( toMove ) ;
+            initialize() ;
+            
+        }
         else return false ;
         
         return true ;
