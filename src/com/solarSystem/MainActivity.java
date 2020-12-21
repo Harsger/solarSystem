@@ -32,6 +32,8 @@ class Controller{
     public static ImageView picture;
     public static TextView debugOutput;
     public static Button resetButton;
+    public static Button centerButton;
+    public static Button focusButton;
     public static AssetManager assetManager;
     
 //     public static void initialize(){
@@ -357,6 +359,7 @@ class database{
     public static ArrayList< Punkt > zBuffer = new ArrayList<Punkt>();
     public static ArrayList< Dot > zweiD = new ArrayList<Dot>();
     
+    public static Punkt central ;
     public static double[][] extrema ;
     public static double maxRange ;
     
@@ -383,6 +386,7 @@ class database{
         String[] columns;
         
         orte = new ArrayList< Punkt >();
+        central = new Punkt( 0. , 0. , 0. , 0 ) ;
         extrema = new double[][] {
                         { -1. , 1. } ,
                         { -1. , 1. } ,
@@ -439,9 +443,13 @@ class database{
                         
                 }
                 
+                central = central.adi( orte.get(counter) );
+                
                 counter++;
                 
             }
+            
+            central.mult( 1. / counter );
             
         }
         catch(IOException e){
@@ -956,6 +964,8 @@ public class MainActivity extends Activity {
         Controller.picture = (ImageView)findViewById(R.id.picture);
         Controller.debugOutput = (TextView)findViewById(R.id.debugOutput);
         Controller.resetButton = (Button)findViewById(R.id.reset);
+        Controller.centerButton = (Button)findViewById(R.id.center);
+        Controller.focusButton = (Button)findViewById(R.id.focus);
         Controller.assetManager = getAssets();
         
         database.fill();
@@ -970,6 +980,32 @@ public class MainActivity extends Activity {
             public void onClick(View view) {
             
                 Projektor.start( database.maxRange / 3. );
+                Projektor.initialize() ;
+                Controller.picture.setImageBitmap( database.projection );
+                Projektor.toText() ;
+                
+            }
+        });
+        
+        Controller.centerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+            
+                Projektor.beob = database.central.subt( Projektor.forward.multNew( Projektor.bereich ) );
+                Projektor.initialize() ;
+                Controller.picture.setImageBitmap( database.projection );
+                Projektor.toText() ;
+                
+            }
+        });
+        
+        Controller.focusButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+            
+                Projektor.forward = database.central.subt( Projektor.beob ) ;
+                Projektor.bereich = Projektor.forward.norm() ;
+                Projektor.forward = Projektor.forward.normal() ;
                 Projektor.initialize() ;
                 Controller.picture.setImageBitmap( database.projection );
                 Projektor.toText() ;

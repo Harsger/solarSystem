@@ -21,14 +21,38 @@
         android:gravity="center"
         android:layout_weight="1.5"
         android:layout_marginTop="2dp"
-        android:text=" no action yet " />
-
-    <Button 
-        android:id="@+id/reset"
-        android:layout_height="0dp"
+        android:text=" no action yet " /> 
+    
+    <LinearLayout 
+        android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:layout_weight="1"
-        android:text="reset"
-        tools:context=".MainActivity" />
+        android:orientation="horizontal" >
+
+        <Button 
+            android:id="@+id/reset"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:text="o"
+            tools:context=".MainActivity" />
+
+        <Button 
+            android:id="@+id/center"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:text="x"
+            tools:context=".MainActivity" />
+
+        <Button 
+            android:id="@+id/focus"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:text="&lt;"
+            tools:context=".MainActivity" />
+        
+    </LinearLayout>
       
 </LinearLayout>
