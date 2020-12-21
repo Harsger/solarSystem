@@ -920,25 +920,29 @@ class Projektor{
                     
         Controller.debugOutput.setText(
             String.format(
+                            " - "+
+                            "%1$.2f"+
+                            "\n"+
                             " + ("+
-                                        "%1$.0f"+"|"+
-                                        "%2$.0f"+"|"+
-                                        "%3$.0f"+
+                                        "%2$.2f"+"|"+
+                                        "%3$.2f"+"|"+
+                                        "%4$.2f"+
                                     ")"+
                             "\n"+
                             " > ("+
-                                        "%4$ 3.2f"+"|"+
-                                        "%5$ 3.2f"+"|"+
-                                        "%6$ 3.2f"+
+                                        "%5$.2f"+"|"+
+                                        "%6$.2f"+"|"+
+                                        "%7$.2f"+
                                     ")"+
                             "\n"+
                             " ^ ("+
-                                        "%7$ 3.2f"+"|"+
-                                        "%8$ 3.2f"+"|"+
-                                        "%9$ 3.2f"+
+                                        "%8$.2f"+"|"+
+                                        "%9$.2f"+"|"+
+                                        "%10$.2f"+
                                     ")"
                             ,
-                            beob.koord[0]   , beob.koord[1]   , beob.koord[2]   ,
+                            bereich ,
+                            beob.koord[0] / bereich , beob.koord[1] / bereich , beob.koord[2] / bereich ,
                             forward.koord[0], forward.koord[1], forward.koord[2],
                             upDir.koord[0]  , upDir.koord[1]  , upDir.koord[2]
                         )
