@@ -790,16 +790,17 @@ class Projektor{
     }
     public static void rotatePos(Punkt rotAx, double angle){
         Matrix rotMat = new Matrix(rotAx, angle);
-        beob = rotMat.mulPtoP(beob);
+        beob = beob.adi( forward.multNew( bereich ) ) ;
+//         beob = rotMat.mulPtoP(beob);
         if( forward.cross( rotAx ).norm() > OfUse.minimum ){
             forward = rotMat.mulPtoP(forward);
             forward = forward.normal();
         }
-//         if( upDir.cross( rotAx ).norm() > OfUse.minimum ){
-        if( upDir.cross( rotAx ).norm() > 0.1 ){
+        if( upDir.cross( rotAx ).norm() > OfUse.minimum ){
             upDir = rotMat.mulPtoP(upDir);
             upDir = upDir.normal();
         }
+        beob = beob.subt( forward.multNew( bereich ) ) ;
         initialize();
     }
     public static void movePos(Punkt direction, double stepsize){
@@ -971,7 +972,7 @@ public class MainActivity extends Activity {
                 Projektor.start( database.maxRange / 3. );
                 Projektor.initialize() ;
                 Controller.picture.setImageBitmap( database.projection );
-//                 Projektor.toText() ;
+                Projektor.toText() ;
                 
             }
         });
