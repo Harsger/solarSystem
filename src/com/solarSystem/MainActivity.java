@@ -487,7 +487,7 @@ class database{
             }
                     
             Controller.display.getSize(dot);
-            imageSize = new int[]{ (int)( (double)dot.x / 0.75 ) , dot.y };
+            imageSize = new int[]{ (int)( (double)dot.x / 0.8 ) , dot.y };
             
 //             imageSize = new int[]{
 //                                                 Controller.picture.getMeasuredWidth() ,
@@ -521,12 +521,12 @@ class database{
             emptyImage = projection.copy( projection.getConfig() , true ) ;
             
             for(coord=0; coord<imageSize[0]; coord++){
-                emptyImage.setPixel( coord , 0 , Color.BLUE );
-                emptyImage.setPixel( coord , imageSize[1]-1 , Color.BLUE );
+                emptyImage.setPixel( coord , 0 , Color.GRAY );
+                emptyImage.setPixel( coord , imageSize[1]-1 , Color.GRAY );
             }
             for(coord=0; coord<imageSize[1]; coord++){
-                emptyImage.setPixel( 0 , coord , Color.BLUE );
-                emptyImage.setPixel( imageSize[0]-1 , coord , Color.BLUE );
+                emptyImage.setPixel( 0 , coord , Color.GRAY );
+                emptyImage.setPixel( imageSize[0]-1 , coord , Color.GRAY );
             }
         
         }

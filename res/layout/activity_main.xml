@@ -4,14 +4,14 @@
     android:layout_height="match_parent"
     android:layout_width="match_parent"
     android:orientation="vertical" 
-    android:weightSum="10"
+    android:weightSum="100"
     android:screenOrientation="portrait" >
    
    <ImageView
         android:id="@+id/picture"
         android:layout_height="0dp" 
         android:layout_width="match_parent"
-        android:layout_weight="7.5"
+        android:layout_weight="80"
         android:src="@drawable/markertemplatematching" />
     
     <TextView 
@@ -19,14 +19,15 @@
         android:layout_height="0dp"
         android:layout_width="match_parent"
         android:gravity="center"
-        android:layout_weight="1.5"
+        android:layout_weight="12"
         android:layout_marginTop="2dp"
+        android:textSize="10sp"
         android:text=" no action yet " /> 
     
     <LinearLayout 
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_width="match_parent"
-        android:layout_weight="1"
+        android:layout_weight="8"
         android:orientation="horizontal" >
 
         <Button 
