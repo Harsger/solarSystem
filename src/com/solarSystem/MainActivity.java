@@ -786,6 +786,7 @@ class Projektor{
         draw();
     }
     public static void rotateView(Punkt rotAx, double angle){
+        if( rotAx.norm() < OfUse.minimum || Math.abs( angle ) < OfUse.minimum ) return ;
         Matrix rotMat = new Matrix(rotAx, angle);
         if( forward.cross( rotAx ).norm() > OfUse.minimum ){
             forward = rotMat.mulPtoP(forward);
@@ -798,6 +799,7 @@ class Projektor{
         initialize();
     }
     public static void rotatePos(Punkt rotAx, double angle){
+        if( rotAx.norm() < OfUse.minimum || Math.abs( angle ) < OfUse.minimum ) return ;
         Matrix rotMat = new Matrix(rotAx, angle);
         beob = beob.adi( forward.multNew( bereich ) ) ;
 //         beob = rotMat.mulPtoP(beob);
@@ -1015,10 +1017,15 @@ public class MainActivity extends Activity {
         Controller.focusButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-            
-                Projektor.forward = database.central.subt( Projektor.beob ) ;
-                Projektor.bereich = Projektor.forward.norm() ;
-                Projektor.forward = Projektor.forward.normal() ;
+                
+                Punkt direction = database.central.subt( Projektor.beob ) ;
+                double distance = direction.norm();
+                direction = direction.normal() ;
+                Projektor.rotateView( 
+                    Projektor.forward.cross( direction ) , 
+                    Projektor.forward.winkel( direction )
+                ) ;
+                Projektor.bereich = distance ;
                 Projektor.initialize() ;
                 Controller.picture.setImageBitmap( database.projection );
                 Projektor.toText() ;
