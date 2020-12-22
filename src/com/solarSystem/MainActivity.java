@@ -52,6 +52,7 @@ class OfUse{
     public static double minimum = Math.pow(10,-12);
     public static double angleFactor = - Math.PI * 0.3 / Math.sqrt(2.) ;
     public static double pixelThreshold = 5. ;
+    public static double angleThreshold = 1. * Math.PI / 180. ;
 }
 
 class Dot{
@@ -153,7 +154,7 @@ class Punkt{
     }
     public double winkel(Punkt pu){
         double rueck=0.;
-        rueck = this.prod(pu)/this.norm()/pu.norm();
+        rueck = Math.acos( this.prod(pu)/this.norm()/pu.norm() );
         return rueck;
     }
     public String toString(){
@@ -673,7 +674,7 @@ class Projektor{
         //////////////////////////////projekt orte to zBuffer///////////////////////////////
         database.zBuffer.clear();
         for(int k=0; k<database.orte.size(); k++){
-            win = forward.winkel( database.orte.get(k).subt( beob ) );
+//             win = forward.winkel( database.orte.get(k).subt( beob ) );
             distance = database.orte.get(k).dist( beob );
 //             if( ( distance >= near && distance <= far ) && win >= wver ){
             if( distance >= near ){
@@ -876,26 +877,26 @@ class Projektor{
         
     }
     public static boolean multiInput(){
+    
+        Punkt currentDirection = database.currentTouch.get(0).subt( database.currentTouch.get(1) ) ;
+        Punkt lastDirection = database.lastTouch.get(0).subt( database.lastTouch.get(1) ) ;
         
         double[] distances = new double[]{ 
-            database.currentTouch.get(0).subt( database.currentTouch.get(1) ).norm() ,
-            database.lastTouch.get(0).subt( database.lastTouch.get(1) ).norm() 
+            currentDirection.norm() ,
+            lastDirection.norm() 
         } ;
+        
+        double rotation = currentDirection.winkel( lastDirection ) ;
         
         Punkt currentMean = database.currentTouch.get(0).adi( database.currentTouch.get(1) ).multNew(0.5) ;
         Punkt lastMean = database.lastTouch.get(0).adi( database.lastTouch.get(1) ).multNew(0.5) ;
         
         Punkt moved = currentMean.subt( lastMean ) ;
         
-//         double scaling = ( distances[0] - distances[1] ) / database.imageDiagonal ;
-        double scaling = ( distances[0] - distances[1] ) / distances[1] ;
-        
-//         Controller.debugOutput.setText( String.format(
-//             " "+"%1$.0f"+" & "+"%2$.0f"+" -> "+"%3$.2f"+" : "+"%4$.0f" , 
-//             distances[1] , distances[0] , scaling , moved.norm()
-//         ) );
-        
         if( Math.abs( distances[0] - distances[1] ) > OfUse.pixelThreshold ){
+        
+            double scaling = ( distances[0] - distances[1] ) / distances[1] ;
+//             double scaling = ( distances[0] - distances[1] ) / database.imageDiagonal ;
             
             beob = beob.adi( forward.multNew( bereich * scaling ) ); 
             bereich *= ( 1. - scaling ) ;
@@ -909,6 +910,14 @@ class Projektor{
             toMove.mult( bereich / database.imageDiagonal ) ;
             beob = beob.adi( toMove ) ;
             initialize() ;
+            
+        }
+        else if( Math.abs( rotation ) > OfUse.angleThreshold ){
+
+            Punkt axis = currentDirection.cross( lastDirection );
+            if( axis.koord[2] > 0. ) rotation *= -1. ;
+            
+            rotateView( forward , rotation ) ;
             
         }
         else return false ;
