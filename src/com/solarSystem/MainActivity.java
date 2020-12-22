@@ -1019,14 +1019,12 @@ public class MainActivity extends Activity {
             public void onClick(View view) {
                 
                 Punkt direction = database.central.subt( Projektor.beob ) ;
-                double distance = direction.norm();
+                Projektor.bereich = direction.norm();
                 direction = direction.normal() ;
                 Projektor.rotateView( 
                     Projektor.forward.cross( direction ) , 
                     Projektor.forward.winkel( direction )
                 ) ;
-                Projektor.bereich = distance ;
-                Projektor.initialize() ;
                 Controller.picture.setImageBitmap( database.projection );
                 Projektor.toText() ;
                 
