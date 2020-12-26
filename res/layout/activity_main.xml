@@ -11,8 +11,7 @@
         android:id="@+id/picture"
         android:layout_height="0dp" 
         android:layout_width="match_parent"
-        android:layout_weight="80"
-        android:src="@drawable/markertemplatematching" />
+        android:layout_weight="80" />
     
     <TextView 
         android:id="@+id/debugOutput"
