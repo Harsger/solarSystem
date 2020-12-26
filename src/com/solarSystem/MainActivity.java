@@ -50,7 +50,7 @@ class Controller{
 class OfUse{
     public static double maximum = Math.pow(10,6);
     public static double minimum = Math.pow(10,-12);
-    public static double angleFactor = - Math.PI * 0.3 / Math.sqrt(2.) ;
+    public static double angleFactor = Math.PI * 0.3 / Math.sqrt(2.) ;
     public static double pixelThreshold = 5. ;
     public static double angleThreshold = 1. * Math.PI / 180. ;
 }
@@ -366,10 +366,6 @@ class database{
     
     public static ArrayList< Punkt > currentTouch = new ArrayList<Punkt>();
     public static ArrayList< Punkt > lastTouch = new ArrayList<Punkt>();
-    
-    public static Punkt axis ;
-    public static Punkt direction ;
-    public static Punkt lastKnown ;
     
     public static int[] imageSize;
     public static int imageScale;
@@ -826,56 +822,22 @@ class Projektor{
                                 database.currentTouch.get(0).koord[0] - database.lastTouch.get(0).koord[0] ,
                                 database.currentTouch.get(0).koord[1] - database.lastTouch.get(0).koord[1]
                             } ;
-                            
-        if( upDir.norm() > OfUse.minimum ) database.lastKnown = upDir ;
-
-        if( Math.abs( scale[0] ) > OfUse.pixelThreshold || Math.abs( scale[1] ) > OfUse.pixelThreshold ){
         
-            if( Math.abs( scale[0] ) < OfUse.pixelThreshold / 2 ) scale[0] = 0 ;
-            if( Math.abs( scale[1] ) < OfUse.pixelThreshold / 2 ) scale[1] = 0 ;
-
-            database.axis = forward.cross( upDir );
-            database.axis.mult( Math.abs( scale[0] ) ) ;
-            database.direction = upDir.multNew( Math.abs( scale[1] ) ) ;
-//                     database.axis.mult( scale[0] ) ;
-//                     database.direction = upDir.multNew( scale[1] ) ;
-            database.direction = database.direction.adi( database.axis );
-            database.direction = database.direction.normal() ;
-            database.axis = forward.cross( database.direction );
+        if( 
+            Math.abs( scale[0] ) < OfUse.pixelThreshold 
+            && 
+            Math.abs( scale[1] ) < OfUse.pixelThreshold 
+        )
+            return ;
             
-            double ratio = Math.sqrt( scale[0] * scale[0] + scale[1] * scale[1] ) / database.imageScale ;
+        if( Math.abs( scale[0] ) < OfUse.pixelThreshold * 0.5 ) scale[0] = 0 ;
+        if( Math.abs( scale[1] ) < OfUse.pixelThreshold * 0.5 ) scale[1] = 0 ;
             
-            if( scale[0] < 0. && scale[1] < 0. ) ratio *= -1. ;
-            if( scale[0] > 0. && scale[1] > 0. ) ratio *=  1. ;
-            
-            if( scale[0] < 0. && scale[1] > 0. ){ 
-                database.axis = database.axis.cross( forward ).normal() ;
-                ratio *=  1. ;
-            }
-            if( scale[0] > 0. && scale[1] < 0. ){ 
-                database.axis = database.axis.cross( forward ).normal() ;
-                ratio *= -1. ;
-            }
-            
-            if( scale[0] == 0 && scale[1] < 0 ) ratio *= -1. ;
-            if( scale[1] == 0 && scale[0] < 0 ) ratio *= -1. ;
-            
-            if( database.axis.norm() > OfUse.minimum ){
-            
-                rotatePos( database.axis , ratio * OfUse.angleFactor );
-                
-                if( upDir.norm() < OfUse.minimum ){ 
-                
-                    upDir = database.lastKnown ;
-                    initialize() ;
-                    
-                }
-    
-//                 Controller.picture.setImageBitmap( database.projection );
-                
-            }
-            
-        }
+        Punkt axis = forward.cross( upDir ).normal() ;
+        Punkt direction = upDir.multNew( scale[1] ).adi( axis.multNew( scale[0] ) ).normal();
+        axis = direction.cross( forward );
+        double ratio = Math.sqrt( scale[0] * scale[0] + scale[1] * scale[1] ) / database.imageScale ;
+        rotatePos( axis , ratio * OfUse.angleFactor );
         
     }
     public static boolean multiInput(){
@@ -988,7 +950,6 @@ public class MainActivity extends Activity {
         Projektor.initialize() ;
         Controller.picture.setImageBitmap( database.projection );
 //         Projektor.toText() ;
-        database.lastKnown = Projektor.upDir ;
         
         Controller.resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
