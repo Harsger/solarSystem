@@ -24,12 +24,14 @@ echo " compiling "
 javac -d obj -classpath src -bootclasspath $PLATFORM -source 1.7 -target 1.7 src/com/${PROJECT}/MainActivity.java
 javac -d obj -classpath src -bootclasspath $PLATFORM -source 1.7 -target 1.7 src/com/${PROJECT}/R.java
 
+cp bin/.gitignore obj/com/solarSystem/.gitignore
+
 echo " translating in Dalvik bytecode "
 $DX --dex --output=classes.dex obj
 
 echo " making APK "
 $AAPT package -f -m -F bin/${PROJECT}.unaligned.apk -M AndroidManifest.xml -S res -I $PLATFORM
-$AAPT add bin/${PROJECT}.unaligned.apk classes.dex assets/stars.txt
+$AAPT add bin/${PROJECT}.unaligned.apk classes.dex assets/*.txt
 
 echo " aligning APK "
 $ZIPALIGN -f 4 bin/${PROJECT}.unaligned.apk bin/${PROJECT}.apk
