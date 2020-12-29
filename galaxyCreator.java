@@ -50,6 +50,7 @@ class Useful{
         double intercept = end - slope * limit ;
         return intercept + slope * t ;
     }
+    
 }
 
 public class galaxyCreator{
@@ -67,8 +68,9 @@ public class galaxyCreator{
         int stepsINspiralArm = 100;
         double numberDecrease = 0.05;
         double radiusDecrease = 0.1;
+        double rotationVelocity = 1e-4;
         
-        BufferedWriter writer = new BufferedWriter(new FileWriter("assets/stars.txt"));
+        BufferedWriter writer = new BufferedWriter(new FileWriter("assets/galaxy.txt"));
         
         int starsPerArm = (int)( 0.9 * requiredStars / (double)nSpiralArms ) ;
         
@@ -123,17 +125,27 @@ public class galaxyCreator{
                                     
                 for(int s=0; s<starsINcluster; s++){
                     
-                    double[] positions = Useful.sphere() ;
+                    double[] position = Useful.sphere() ;
                     double starClusterDistance = Useful.zufaellig( 0. , clusterRadius ) ;
                     
                     for(int k=0; k<3; k++)
-                        positions[k] = clusterPosition[k] + positions[k] * starClusterDistance ;
+                        position[k] = clusterPosition[k] + position[k] * starClusterDistance ;
+                        
+                    double[] velocity = new double[]{
+                          position[1] * rotationVelocity ,
+                        - position[0] * rotationVelocity ,
+//                         - position[2] * rotationVelocity 
+                        0.
+                    };
                     
                     double starMass = Useful.massGenerator( massRange[0] , massRange[1] );
                     
-                    writer.write( String.format("%.2f",starMass) );
                     for(int k=0; k<3; k++)
-                        writer.write( String.format("\t%.1f",positions[k] ) );
+                        writer.write( String.format("%.1f\t",position[k] ) );
+                    for(int k=0; k<3; k++)
+                        writer.write( String.format("%.5f\t",velocity[k] ) );
+                        
+                    writer.write( String.format("%.2f",starMass) );
                     writer.write( "\n" );
                     
                 }
