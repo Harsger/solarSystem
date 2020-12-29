@@ -61,6 +61,7 @@ public class galaxyCreator{
         int requiredStars = 10000;
         int nSpiralArms = 6;
         double radius = 100000.;
+        double bulgeRadius = 0.2 * radius ;
         double width = 10000.;
         double ratioCenterArms = 0.3;
         double centerRadius = 20000.;
@@ -154,9 +155,43 @@ public class galaxyCreator{
             
         }
         
-        writer.close();
-        
         System.out.println(" # "+counter);
+        
+        if( counter < requiredStars ){
+        
+            requiredStars -= counter ;
+            
+            for(int s=0; s<requiredStars; s++){
+                    
+                double[] position = Useful.sphere() ;
+                double starDistance = Useful.zufaellig( 0. , bulgeRadius ) ;
+                
+                position[0] *= starDistance ;
+                position[1] *= starDistance ;
+                position[2] *= ( starDistance * width / bulgeRadius ) ;
+                    
+                double[] velocity = new double[]{
+                      position[1] * rotationVelocity ,
+                    - position[0] * rotationVelocity ,
+//                     - position[2] * rotationVelocity 
+                    0.
+                };
+                    
+                double starMass = Useful.massGenerator( massRange[0] , massRange[1] );
+                    
+                for(int k=0; k<3; k++)
+                    writer.write( String.format("%.1f\t",position[k] ) );
+                for(int k=0; k<3; k++)
+                    writer.write( String.format("%.5f\t",velocity[k] ) );
+                    
+                writer.write( String.format("%.2f",starMass) );
+                writer.write( "\n" );
+                
+            }
+        
+        }
+        
+        writer.close();
     
     }
     
