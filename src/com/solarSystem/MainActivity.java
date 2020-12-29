@@ -404,7 +404,7 @@ class database{
         
             BufferedReader reader = new BufferedReader( 
                                         new InputStreamReader( 
-                                            Controller.assetManager.open("stars.txt") 
+                                            Controller.assetManager.open("galaxy.txt") 
                                         ) 
                                     );
             
@@ -412,12 +412,12 @@ class database{
             while( ( line = reader.readLine() ) != null ){
             
                 columns = line.split("\t");
-                if( columns.length < 4 ) continue;
+                if( columns.length < 3 ) continue;
                 
                 orte.add( new Punkt(
+                        Double.parseDouble( columns[0] ) ,
                         Double.parseDouble( columns[1] ) ,
                         Double.parseDouble( columns[2] ) ,
-                        Double.parseDouble( columns[3] ) ,
                         Color.WHITE
                     ) 
                 );

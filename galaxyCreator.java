@@ -61,8 +61,9 @@ public class galaxyCreator{
         int requiredStars = 10000;
         int nSpiralArms = 6;
         double radius = 100000.;
-        double bulgeRadius = 0.2 * radius ;
+        double bulgeRadius = 0.4 * radius ;
         double width = 10000.;
+        double bulgeExtension = 1.4;
         double ratioCenterArms = 0.3;
         double centerRadius = 20000.;
         double[] massRange = new double[]{ 0.1 , 2000. };
@@ -159,7 +160,7 @@ public class galaxyCreator{
         
         if( counter < requiredStars ){
         
-            requiredStars -= counter ;
+//             requiredStars -= counter ;
             
             for(int s=0; s<requiredStars; s++){
                     
@@ -168,7 +169,7 @@ public class galaxyCreator{
                 
                 position[0] *= starDistance ;
                 position[1] *= starDistance ;
-                position[2] *= ( starDistance * width / bulgeRadius ) ;
+                position[2] *= ( starDistance * width / bulgeRadius * bulgeExtension ) ;
                     
                 double[] velocity = new double[]{
                       position[1] * rotationVelocity ,
