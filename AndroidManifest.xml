@@ -4,6 +4,8 @@
     package='com.solarSystem' 
     android:versionCode='0' 
     android:versionName='0'>
+    <uses-permission android:name = "android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name = "android.permission.READ_EXTERNAL_STORAGE"/>
     <application android:label='solarSystem'>
         <activity android:name='com.solarSystem.MainActivity'>
              <intent-filter>
