@@ -13,16 +13,6 @@
         android:layout_width="match_parent"
         android:layout_weight="80" />
     
-    <TextView 
-        android:id="@+id/debugOutput"
-        android:layout_height="0dp"
-        android:layout_width="match_parent"
-        android:gravity="center"
-        android:layout_weight="12"
-        android:layout_marginTop="2dp"
-        android:textSize="10sp"
-        android:text=" no action yet " /> 
-    
     <LinearLayout 
         android:layout_height="0dp"
         android:layout_width="match_parent"
@@ -52,6 +42,32 @@
             android:layout_weight="1"
             android:text="&lt;"
             tools:context=".MainActivity" />
+        
+    </LinearLayout>
+    
+    <LinearLayout 
+        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_weight="12"
+        android:orientation="horizontal" >   
+        
+        <Spinner
+            android:id="@+id/loader"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:text="L"
+            android:textSize="10dp" /> 
+    
+        <TextView 
+            android:id="@+id/debugOutput"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:layout_marginTop="2dp"
+            android:textSize="10sp"
+            android:text=" no action yet " /> 
         
     </LinearLayout>
       

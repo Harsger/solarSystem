@@ -19,6 +19,7 @@ import android.view.MotionEvent;
 import android.widget.TextView;
 import android.widget.ImageView;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.content.res.AssetManager;
 import android.graphics.drawable.Drawable;
 import android.graphics.Bitmap;
@@ -31,6 +32,7 @@ class Controller{
     public static Display display;
     public static ImageView picture;
     public static TextView debugOutput;
+    public static Spinner loader;
     public static Button resetButton;
     public static Button centerButton;
     public static Button focusButton;
@@ -940,6 +942,7 @@ public class MainActivity extends Activity {
         Controller.display = getWindowManager().getDefaultDisplay();
         Controller.picture = (ImageView)findViewById(R.id.picture);
         Controller.debugOutput = (TextView)findViewById(R.id.debugOutput);
+        Controller.loader = (Spinner)findViewById(R.id.loader); 
         Controller.resetButton = (Button)findViewById(R.id.reset);
         Controller.centerButton = (Button)findViewById(R.id.center);
         Controller.focusButton = (Button)findViewById(R.id.focus);
