@@ -20,6 +20,9 @@ import android.widget.TextView;
 import android.widget.ImageView;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
 import android.content.res.AssetManager;
 import android.graphics.drawable.Drawable;
 import android.graphics.Bitmap;
@@ -33,6 +36,7 @@ class Controller{
     public static ImageView picture;
     public static TextView debugOutput;
     public static Spinner loader;
+    public static ArrayAdapter<String> selection;
     public static Button resetButton;
     public static Button centerButton;
     public static Button focusButton;
@@ -376,6 +380,10 @@ class database{
     public static Bitmap emptyImage ;
     
     public static void fill(){
+        fill("galaxy");
+    }
+    
+    public static void fill(String assetFileName){
 
         Integer counter = 0 , index , coord ;
         String line;
@@ -406,7 +414,7 @@ class database{
         
             BufferedReader reader = new BufferedReader( 
                                         new InputStreamReader( 
-                                            Controller.assetManager.open("galaxy.txt") 
+                                            Controller.assetManager.open(assetFileName+".txt") 
                                         ) 
                                     );
             
@@ -947,6 +955,27 @@ public class MainActivity extends Activity {
         Controller.centerButton = (Button)findViewById(R.id.center);
         Controller.focusButton = (Button)findViewById(R.id.focus);
         Controller.assetManager = getAssets();
+        
+        Controller.selection = new ArrayAdapter<String>( 
+            this , android.R.layout.simple_spinner_dropdown_item ,
+            new ArrayList<String>( Arrays.asList( "galaxy" , "planets" , "sphere" ) )
+        );
+        
+        Controller.loader.setOnItemSelectedListener( new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView parent, View v, int position, long id) {  
+                database.fill( Controller.selection.getItem(position).toString() );
+                Projektor.start( database.maxRange / 3. );
+                Projektor.initialize() ;
+                Controller.picture.setImageBitmap( database.projection );
+                Projektor.toText() ;
+            }
+            @Override
+            public void onNothingSelected(AdapterView parent) {
+                Controller.loader.setSelection( Controller.selection.getPosition( "galaxy" ) );
+            }
+        });
+        Controller.loader.setAdapter( Controller.selection );
         
         database.fill();
         Projektor.start( database.maxRange / 3. );
