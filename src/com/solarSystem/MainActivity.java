@@ -360,6 +360,38 @@ class RotMat extends Matrix{
     }
 }
 
+class Massive{
+    double mass;
+    Punkt position;
+    Punkt velocity;
+    double radius = 0.;
+    double orbit = 0.;
+    public Massive(double px,double py,double pz,double vx,double vy, double vz,double m,int color,double r){
+        this.mass = m;
+        this.radius = r;
+        this.position = new Punkt( px , py , pz , color );
+        this.position = new Punkt( vx , vy , vz , color );
+    }
+    public Massive(double px,double py,double pz,double vx,double vy, double vz,double m,int color){
+        this( px , py , pz , vx , vy , vz , m , color , 0. );
+    }
+    public Massive(double px,double py,double pz,double vx,double vy, double vz,double m){
+        this( px , py , pz , vx , vy , vz , m , Color.WHITE );
+    }
+    public Massive(Punkt p,Punkt v,double m, double r){
+        this.mass = m;
+        this.radius = r;
+        this.position = new Punkt( p );
+        this.position = new Punkt( v );
+    }
+    public Massive(Punkt p,Punkt v,double m){
+        this( p , v , m , 0. );
+    }
+    public void orbits( Massive central ){
+        this.orbit = this.position.subt( central.position ).norm();
+    }
+}
+
 class database{
 
     public static ArrayList< Punkt > orte = new ArrayList<Punkt>();
@@ -761,7 +793,7 @@ class Projektor{
         int num = database.zBuffer.size();
         int newnum = 0;
         int order[] = new int[num];
-        double values[] = new double[num];
+//         double values[] = new double[num];
 //         for(int i=1; i<num; i++){
 //             order[i] = i;
 //             values[i] = database.zBuffer.get(i).koord[2];
