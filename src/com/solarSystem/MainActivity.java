@@ -421,16 +421,68 @@ class database{
             counter = 0;
             while( ( line = reader.readLine() ) != null ){
             
-                columns = line.split("\t");
-                if( columns.length < 3 ) continue;
+                String[] columnsT = line.split("\t");
+                String[] columnsS = line.split(" ");
+                String[] columnsC = line.split(",");
+                String[] columnsH = line.split(";");
+            
+                columns = columnsT;
+                if( columns.length < columnsS.length ) columns = columnsS ;
+                if( columns.length < columnsC.length ) columns = columnsC ;
+                if( columns.length < columnsH.length ) columns = columnsH ;
                 
-                orte.add( new Punkt(
-                        Double.parseDouble( columns[0] ) ,
-                        Double.parseDouble( columns[1] ) ,
-                        Double.parseDouble( columns[2] ) ,
-                        Color.WHITE
-                    ) 
-                );
+                if( columns.length == 1 ){
+                    try{
+                        Double number = Double.parseDouble( columns[0] );
+                        orte.add( new Punkt(
+                                number ,
+                                counter ,
+                                0. ,
+                                Color.WHITE
+                            ) 
+                        );
+                    }
+                    catch (NumberFormatException ex) {
+                       continue;
+                    }
+                }
+                else if( columns.length == 2 ){
+                    orte.add( new Punkt(
+                            Double.parseDouble( columns[0] ) ,
+                            Double.parseDouble( columns[1] ) ,
+                            0. ,
+                            Color.WHITE
+                        ) 
+                    );
+                }
+                else if( columns.length == 3 ){
+                    orte.add( new Punkt(
+                            Double.parseDouble( columns[0] ) ,
+                            Double.parseDouble( columns[1] ) ,
+                            Double.parseDouble( columns[2] ) ,
+                            Color.WHITE
+                        ) 
+                    );
+                }
+                else if( columns.length == 4 ){
+                    orte.add( new Punkt(
+                            Double.parseDouble( columns[0] ) ,
+                            Double.parseDouble( columns[1] ) ,
+                            Double.parseDouble( columns[2] ) ,
+                            Integer.parseInt(   columns[3] )
+                        ) 
+                    );
+                }
+                else if( columns.length > 4 ){
+                    orte.add( new Punkt(
+                            Double.parseDouble( columns[0] ) ,
+                            Double.parseDouble( columns[1] ) ,
+                            Double.parseDouble( columns[2] ) ,
+                            Color.WHITE
+                        ) 
+                    );
+                }
+                else continue ;
                 
                 if( counter < 1 ){
                     extrema = new double[][] {
