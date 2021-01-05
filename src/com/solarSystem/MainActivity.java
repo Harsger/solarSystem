@@ -434,6 +434,8 @@ class Massive{
 class database{
     
     public static ArrayList< Massive > masses = new ArrayList<Massive>();
+    
+    public static boolean specialPlanets = false ;
 
     public static ArrayList< Punkt > orte = new ArrayList<Punkt>();
     public static ArrayList< Punkt > zBuffer = new ArrayList<Punkt>();
@@ -469,6 +471,9 @@ class database{
     }
     
     public static void readFile(String assetFileName){
+    
+        if( assetFileName.equals("planets") ) specialPlanets = true ;
+        else specialPlanets = false ;
 
         Integer counter = 0;
         
@@ -639,7 +644,12 @@ class database{
                 
                 for(int p=0; p<OfUse.pointsONsphere; p++){
                     Punkt onSphere = new Punkt( OfUse.sphere() , masses.get(m).position.col );
-                    onSphere.mult( masses.get(m).radius );
+                    if( specialPlanets ){
+                        if( m == 0 ) onSphere.mult( masses.get(m).radius * 20. );
+                        else onSphere.mult( masses.get(m).radius * 100. );
+                    }
+                    else
+                        onSphere.mult( masses.get(m).radius );
                     onSphere = onSphere.adi( masses.get(m).position );
                     onSphere.col = masses.get(m).position.col ;
                     orte.add( onSphere );
