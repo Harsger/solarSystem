@@ -58,7 +58,35 @@ class OfUse{
     public static double minimum = Math.pow(10,-12);
     public static double angleFactor = Math.PI * 0.3 / Math.sqrt(2.) ;
     public static double pixelThreshold = 5. ;
-    public static double angleThreshold = 1. * Math.PI / 180. ;
+    public static double angleThreshold = Math.PI / 180. ;
+    public static double pointsONcircle = 360 ;
+    public static double pointsONsphere = 1000 ;
+
+    public static double zufaellig(double unter, double ober){
+        return zufaellig( unter, ober, 1 ) ;
+    }
+
+    public static double zufaellig(double unter, double ober, int vert){
+        double rueck = 0.;
+        if(vert<1) rueck=(ober-unter) * 0.5;
+        else{
+            for(int i=0; i<vert; i++){
+                rueck += unter + Math.random() * (ober - unter);
+            }
+            rueck /= vert;
+        }
+        return rueck;
+    }
+    
+    public static double[] sphere(){
+        double[] rueck = new double[]{ zufaellig(-1.,1.) , zufaellig(-1.,1.) , zufaellig(-1.,1.) };
+        double norm = Math.sqrt( rueck[0] * rueck[0] + rueck[1] * rueck[1] + rueck[2] * rueck[2] );
+        rueck[0] /= norm ;
+        rueck[1] /= norm ;
+        rueck[2] /= norm ;
+        return rueck ;
+    }
+    
 }
 
 class Dot{
@@ -78,6 +106,10 @@ class Dot{
 class Punkt{
     double[] koord;
     int col;
+    public Punkt(){
+        koord = OfUse.sphere();
+        col = Color.WHITE;
+    }
     public Punkt(double a, double b, double c, int d){
         koord = new double[3];
         koord[0] = a;
@@ -370,7 +402,7 @@ class Massive{
         this.mass = m;
         this.radius = r;
         this.position = new Punkt( px , py , pz , color );
-        this.position = new Punkt( vx , vy , vz , color );
+        this.velocity = new Punkt( vx , vy , vz , color );
     }
     public Massive(double px,double py,double pz,double vx,double vy, double vz,double m,int color){
         this( px , py , pz , vx , vy , vz , m , color , 0. );
@@ -382,10 +414,17 @@ class Massive{
         this.mass = m;
         this.radius = r;
         this.position = new Punkt( p );
-        this.position = new Punkt( v );
+        this.velocity = new Punkt( v );
     }
     public Massive(Punkt p,Punkt v,double m){
         this( p , v , m , 0. );
+    }
+    public Massive( Massive m ){
+        this.mass = m.mass ;
+        this.radius = m.radius ;
+        this.orbit = m.orbit ;
+        this.position = new Punkt( m.position );
+        this.velocity = new Punkt( m.velocity );
     }
     public void orbits( Massive central ){
         this.orbit = this.position.subt( central.position ).norm();
@@ -393,13 +432,21 @@ class Massive{
 }
 
 class database{
+    
+    public static ArrayList< Massive > masses = new ArrayList<Massive>();
 
     public static ArrayList< Punkt > orte = new ArrayList<Punkt>();
     public static ArrayList< Punkt > zBuffer = new ArrayList<Punkt>();
     public static ArrayList< Dot > zweiD = new ArrayList<Dot>();
     
-    public static Punkt central ;
-    public static double[][] extrema ;
+    public static Punkt central = new Punkt( 0. , 0. , 0. , 0 );
+    public static Punkt mainAxis = new Punkt( 0. , 1. , 0. , 0 );
+    public static Punkt secondAxis = new Punkt( 1. , 0. , 0. , 0 );
+    public static double[][] extrema = new double[][] {
+                                                        { -1. , 1. } ,
+                                                        { -1. , 1. } ,
+                                                        { -1. , 1. }
+                                                    };
     public static double maxRange ;
     
     public static ArrayList< Punkt > currentTouch = new ArrayList<Punkt>();
@@ -416,21 +463,21 @@ class database{
     }
     
     public static void fill(String assetFileName){
+        readFile( assetFileName );
+        evaluateRead();
+        initializeBitmaps();
+    }
+    
+    public static void readFile(String assetFileName){
 
-        Integer counter = 0 , index , coord ;
-        String line;
-        Point dot = new Point();
+        Integer counter = 0;
         
         String[] files = new String[1];
+        String line;
         String[] columns;
         
+        masses = new ArrayList<Massive>();
         orte = new ArrayList< Punkt >();
-        central = new Punkt( 0. , 0. , 0. , 0 ) ;
-        extrema = new double[][] {
-                        { -1. , 1. } ,
-                        { -1. , 1. } ,
-                        { -1. , 1. }
-                    };
         
         try{
             files = Controller.assetManager.list("");
@@ -505,6 +552,32 @@ class database{
                         ) 
                     );
                 }
+                else if( columns.length == 7 ){
+                    masses.add( new Massive(
+                            Double.parseDouble( columns[0] ) ,
+                            Double.parseDouble( columns[1] ) ,
+                            Double.parseDouble( columns[2] ) ,
+                            Double.parseDouble( columns[3] ) ,
+                            Double.parseDouble( columns[4] ) ,
+                            Double.parseDouble( columns[5] ) ,
+                            Double.parseDouble( columns[6] ) 
+                        ) 
+                    );
+                }
+                else if( columns.length == 9 ){
+                    masses.add( new Massive(
+                            Double.parseDouble( columns[0] ) ,
+                            Double.parseDouble( columns[1] ) ,
+                            Double.parseDouble( columns[2] ) ,
+                            Double.parseDouble( columns[3] ) ,
+                            Double.parseDouble( columns[4] ) ,
+                            Double.parseDouble( columns[5] ) ,
+                            Double.parseDouble( columns[6] ) ,
+                            Integer.parseInt(   columns[8] ) ,
+                            Double.parseDouble( columns[7] ) 
+                        ) 
+                    );
+                }
                 else if( columns.length > 4 ){
                     orte.add( new Punkt(
                             Double.parseDouble( columns[0] ) ,
@@ -516,37 +589,15 @@ class database{
                 }
                 else continue ;
                 
-                if( counter < 1 ){
-                    extrema = new double[][] {
-                        { orte.get(counter).koord[0] , orte.get(counter).koord[0] } ,
-                        { orte.get(counter).koord[1] , orte.get(counter).koord[1] } ,
-                        { orte.get(counter).koord[2] , orte.get(counter).koord[2] }
-                    };
-                }
-                
-                for( coord=0 ; coord<3 ; coord++ ){
-                
-                    if( extrema[coord][0] > orte.get(counter).koord[coord] )
-                        extrema[coord][0] = orte.get(counter).koord[coord] ;
-                    
-                    if( extrema[coord][1] < orte.get(counter).koord[coord] )
-                        extrema[coord][1] = orte.get(counter).koord[coord] ;
-                        
-                }
-                
-                central = central.adi( orte.get(counter) );
-                
                 counter++;
                 
             }
             
-            central.mult( 1. / counter );
-            
         }
         catch(IOException e){
             line = "" ;
-            for(index=0; index<counter; index++){
-                line += files[index];
+            for(int i=0; i<counter; i++){
+                line += files[i];
                 line += "\n";
             }
             Controller.debugOutput.setText(
@@ -562,6 +613,106 @@ class database{
             );
         }
         
+    }
+    
+    public static void evaluateRead(){
+    
+        boolean[] filled = new boolean[]{ false , false };
+        boolean fullMean = true ;
+        
+        central = new Punkt( 0. , 0. , 0. , 0 );
+        
+        Massive origin = new Massive( central , central , 0. );
+        int largestAttractor = -1 ;
+        
+        if( orte.size() > 0 ) filled[0] = true ;
+    
+        if( masses.size() > 0 ){
+        
+            filled[1] = true ;
+            
+            for(int m=0; m<masses.size(); m++){
+                
+                orte.add( masses.get(m).position ) ;
+                
+                if( masses.get(m).radius == 0. ) continue ;
+                
+                for(int p=0; p<OfUse.pointsONsphere; p++){
+                    Punkt onSphere = new Punkt( OfUse.sphere() , masses.get(m).position.col );
+                    onSphere.mult( masses.get(m).radius );
+                    onSphere = onSphere.adi( masses.get(m).position );
+                    onSphere.col = masses.get(m).position.col ;
+                    orte.add( onSphere );
+                }
+                
+                if( masses.get(m).mass > origin.mass ){
+                    largestAttractor = m ;
+                    origin = new Massive( masses.get(m) ) ;
+                }
+                
+            }
+            
+            if( largestAttractor == 0 ){
+                
+                for(int m=1; m<masses.size(); m++){
+                    
+                    if( masses.get(m).radius == 0. ) continue ;
+                    
+                    masses.get(m).orbits( origin ) ;
+                    
+                    if( masses.get(m).orbit == 0. ) continue ;
+                    
+                    Punkt connection = masses.get(m).position.subt( origin.position ).normal();
+                    Punkt tangent = connection.cross( masses.get(m).velocity.normal() );
+                    tangent = tangent.cross( connection ).normal();
+                    
+                    for(int p=0; p<OfUse.pointsONcircle; p++){
+                        double angle = p * OfUse.angleThreshold ;
+                        Punkt onCircle = tangent.multNew( Math.cos( angle ) )
+                                                .adi( connection.multNew( Math.sin( angle ) ) )
+                                                .adi( origin.position );
+                        onCircle.col = masses.get(m).position.col ;
+                        orte.add( onCircle );
+                    }
+                    
+                }
+                
+            }
+            
+        }
+        
+        for(int i=0; i<orte.size(); i++){
+           
+            if( i < 1 ){
+            
+                extrema = new double[][] {
+                    { orte.get(i).koord[0] , orte.get(i).koord[0] } ,
+                    { orte.get(i).koord[1] , orte.get(i).koord[1] } ,
+                    { orte.get(i).koord[2] , orte.get(i).koord[2] }
+                };
+                
+            }
+            else{
+            
+                for(int c=0 ; c<3 ; c++ ){
+                
+                    if( extrema[c][0] > orte.get(i).koord[c] )
+                        extrema[c][0] = orte.get(i).koord[c] ;
+                    
+                    if( extrema[c][1] < orte.get(i).koord[c] )
+                        extrema[c][1] = orte.get(i).koord[c] ;
+                        
+                }
+                
+            }
+            
+            if( largestAttractor != 0 ) central = central.adi( orte.get(i) );
+        
+        }
+            
+        if( largestAttractor != 0 ) central.mult( 1. / orte.size() );
+        else central = new Punkt( origin.position ); 
+        
         if( 
             extrema[0][1] != extrema[0][0]
             ||
@@ -569,56 +720,106 @@ class database{
             ||
             extrema[2][1] != extrema[2][0]
         ){
-
-            maxRange = extrema[0][1] - extrema[0][0] ;
-            for( index=1; index<3; index++ ){
-                if( extrema[index][1] - extrema[index][0] > maxRange )
-                    maxRange = extrema[index][1] - extrema[index][0] ;
-            }
-                    
-            Controller.display.getSize(dot);
-            imageSize = new int[]{ (int)( (double)dot.x / 0.8 ) , dot.y };
-            
-//             imageSize = new int[]{
-//                                                 Controller.picture.getMeasuredWidth() ,
-//                                                 Controller.picture.getMeasuredHeight() 
-//                                             };
-            
-            imageDiagonal = Math.sqrt( imageSize[0] * imageSize[0] + imageSize[1] * imageSize[1] );
-                                            
-            imageScale = imageSize[0] ;
-            if( imageScale > imageSize[1] ) 
-                imageScale = imageSize[1] ;            
-                
-            Controller.debugOutput.setText(
-                                    " width "
-                                    +
-                                    imageSize[0]
-                                    +
-                                    " | "
-                                    +
-                                    " height "
-                                    +
-                                    imageSize[1]
-                                );
-    
-            projection = Bitmap.createBitmap( 
-                                                imageSize[0], 
-                                                imageSize[1], 
-                                                Bitmap.Config.ARGB_8888
-                                            );    
-                                            
-            emptyImage = projection.copy( projection.getConfig() , true ) ;
-            
-            for(coord=0; coord<imageSize[0]; coord++){
-                emptyImage.setPixel( coord , 0 , Color.GRAY );
-                emptyImage.setPixel( coord , imageSize[1]-1 , Color.GRAY );
-            }
-            for(coord=0; coord<imageSize[1]; coord++){
-                emptyImage.setPixel( 0 , coord , Color.GRAY );
-                emptyImage.setPixel( imageSize[0]-1 , coord , Color.GRAY );
-            }
         
+            int[] maxAxis = new int[]{ 0 , 1 };
+            int[][] other = new int[][]{
+                { 1 , 2 } ,
+                { 0 , 2 } ,
+                { 0 , 1 }
+            };
+            
+            double[] differences = new double[]{
+                extrema[0][1] - extrema[0][0] ,
+                extrema[1][1] - extrema[1][0] ,
+                extrema[2][1] - extrema[2][0]
+            };
+
+            if( largestAttractor == 0 ){
+            
+                for(int c=0; c<3; c++){
+                    differences[c] = 2. * Math.max(
+                        Math.abs( extrema[c][0] - central.koord[c] )
+                        ,
+                        Math.abs( extrema[c][1] - central.koord[c] )
+                    ) ;
+                }
+            
+            }
+                
+            for(int c=0; c<3; c++){
+                if( maxRange < differences[c] || c < 1 ){
+                    maxRange = differences[c] ;
+                    maxAxis[0] = c ;
+                }
+            }   
+            
+            if( differences[other[maxAxis[0]][0]] > differences[other[maxAxis[0]][1]] ) 
+                maxAxis[1] = other[maxAxis[0]][0] ; 
+            else 
+                maxAxis[1] = other[maxAxis[0]][1] ; 
+                
+            Punkt[] basis = new Punkt[]{
+                new Punkt( 1. , 0. , 0. , 0 ) ,
+                new Punkt( 0. , 1. , 0. , 0 ) ,
+                new Punkt( 0. , 0. , 1. , 0 ) 
+            };
+            
+            mainAxis   = new Punkt( basis[ maxAxis[0] ] );
+            secondAxis = new Punkt( basis[ maxAxis[1] ] );
+            
+        }
+        else{
+            maxRange = 1. ;
+            mainAxis   = new Punkt( 1. , 0. , 0. , 0 );
+            secondAxis = new Punkt( 0. , 1. , 0. , 0 );
+        }
+        
+    }
+        
+    public static void initializeBitmaps(){
+                    
+        Point dot = new Point();
+        Controller.display.getSize(dot);
+        imageSize = new int[]{ (int)( (double)dot.x / 0.8 ) , dot.y };
+        
+//         imageSize = new int[]{
+//                                 Controller.picture.getMeasuredWidth() ,
+//                                 Controller.picture.getMeasuredHeight() 
+//                             };
+        
+        imageDiagonal = Math.sqrt( imageSize[0] * imageSize[0] + imageSize[1] * imageSize[1] );
+                                        
+        imageScale = imageSize[0] ;
+        if( imageScale > imageSize[1] ) 
+            imageScale = imageSize[1] ;               
+            
+//         Controller.debugOutput.setText(
+//                                 " width "
+//                                 +
+//                                 imageSize[0]
+//                                 +
+//                                 " | "
+//                                 +
+//                                 " height "
+//                                 +
+//                                 imageSize[1]
+//                             );
+                            
+        projection = Bitmap.createBitmap( 
+                                            imageSize[0], 
+                                            imageSize[1], 
+                                            Bitmap.Config.ARGB_8888
+                                        );    
+                                        
+        emptyImage = projection.copy( projection.getConfig() , true ) ;
+        
+        for(int c=0; c<imageSize[0]; c++){
+            emptyImage.setPixel( c , 0 , Color.GRAY );
+            emptyImage.setPixel( c , imageSize[1]-1 , Color.GRAY );
+        }
+        for(int c=0; c<imageSize[1]; c++){
+            emptyImage.setPixel( 0 , c , Color.GRAY );
+            emptyImage.setPixel( imageSize[0]-1 , c , Color.GRAY );
         }
         
     }
@@ -690,9 +891,15 @@ class Projektor{
     }
     public static void start(double ber, Punkt be, Punkt fow, Punkt up){
         bereich = ber ;
-        beob = be;
-        forward = fow;
-        upDir = up;
+        beob = new Punkt( be );
+        forward = new Punkt( fow );
+        upDir = new Punkt( up );
+    }
+    public static void startBYdata(){
+        bereich = database.maxRange / 3. ;
+        upDir = database.mainAxis;
+        forward = database.secondAxis.cross( database.mainAxis ).multNew(-1.).normal();
+        beob = database.central.adi( forward.multNew( - database.maxRange / 3. ) );
     }
     public static void projektion(){
 
@@ -1013,7 +1220,7 @@ class Projektor{
                             forward.koord[0], forward.koord[1], forward.koord[2],
                             upDir.koord[0]  , upDir.koord[1]  , upDir.koord[2]
                         )
-        );
+        );  
                 
     }
 }
@@ -1049,7 +1256,7 @@ public class MainActivity extends Activity {
             @Override
             public void onItemSelected(AdapterView parent, View v, int position, long id) {  
                 database.fill( Controller.selection.getItem(position).toString() );
-                Projektor.start( database.maxRange / 3. );
+                Projektor.startBYdata();
                 Projektor.initialize() ;
                 Controller.picture.setImageBitmap( database.projection );
                 Projektor.toText() ;
@@ -1062,16 +1269,16 @@ public class MainActivity extends Activity {
         Controller.loader.setAdapter( Controller.selection );
         
         database.fill();
-        Projektor.start( database.maxRange / 3. );
+        Projektor.startBYdata();
         Projektor.initialize() ;
         Controller.picture.setImageBitmap( database.projection );
-//         Projektor.toText() ;
+        Projektor.toText() ;
         
         Controller.resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
             
-                Projektor.start( database.maxRange / 3. );
+                Projektor.startBYdata();
                 Projektor.initialize() ;
                 Controller.picture.setImageBitmap( database.projection );
                 Projektor.toText() ;
