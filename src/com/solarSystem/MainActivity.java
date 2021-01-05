@@ -670,6 +670,7 @@ class database{
                         double angle = p * OfUse.angleThreshold ;
                         Punkt onCircle = tangent.multNew( Math.cos( angle ) )
                                                 .adi( connection.multNew( Math.sin( angle ) ) )
+                                                .multNew( masses.get(m).orbit )
                                                 .adi( origin.position );
                         onCircle.col = masses.get(m).position.col ;
                         orte.add( onCircle );
@@ -1249,7 +1250,7 @@ public class MainActivity extends Activity {
         
         Controller.selection = new ArrayAdapter<String>( 
             this , android.R.layout.simple_spinner_dropdown_item ,
-            new ArrayList<String>( Arrays.asList( "galaxy" , "planets" , "sphere" ) )
+            new ArrayList<String>( Arrays.asList( "galaxy" , "planets" , "sphere" , "colorful" ) )
         );
         
         Controller.loader.setOnItemSelectedListener( new AdapterView.OnItemSelectedListener() {
