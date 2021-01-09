@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.File;
+import java.io.FileReader;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Color;
+import android.net.Uri;
+import android.content.Intent;
 
 class Controller{
         
@@ -432,6 +435,8 @@ class Massive{
 }
 
 class database{
+
+    public static String filePathNname = "" ;
     
     public static ArrayList< Massive > masses = new ArrayList<Massive>();
     
@@ -496,11 +501,22 @@ class database{
         
         try{
         
-            BufferedReader reader = new BufferedReader( 
-                                        new InputStreamReader( 
-                                            Controller.assetManager.open(assetFileName+".txt") 
-                                        ) 
-                                    );
+            BufferedReader reader;
+            
+            if( assetFileName.equals("read") && !( filePathNname.equals("") ) ){
+                reader = new BufferedReader(
+                                                new FileReader(
+                                                    new File( filePathNname )
+                                                )
+                                            );
+                filePathNname = "" ;
+            }
+            else
+                reader = new BufferedReader( 
+                                                new InputStreamReader( 
+                                                    Controller.assetManager.open(assetFileName+".txt") 
+                                                ) 
+                                            );
             
             counter = 0;
             while( ( line = reader.readLine() ) != null ){
@@ -597,6 +613,8 @@ class database{
                 counter++;
                 
             }
+            
+            reader.close();
             
         }
         catch(IOException e){
@@ -1240,6 +1258,8 @@ public class MainActivity extends Activity {
 
     static int identification , position , index ;
     static boolean toDraw , overwrite ;
+    static final int PICKFILE_RESULT_CODE = 1;
+    static Uri fileUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -1258,19 +1278,34 @@ public class MainActivity extends Activity {
         Controller.focusButton = (Button)findViewById(R.id.focus);
         Controller.assetManager = getAssets();
         
+        database.fill();
+        Projektor.startBYdata();
+        Projektor.initialize() ;
+        Controller.picture.setImageBitmap( database.projection );
+        Projektor.toText() ;
+        
         Controller.selection = new ArrayAdapter<String>( 
             this , android.R.layout.simple_spinner_dropdown_item ,
-            new ArrayList<String>( Arrays.asList( "galaxy" , "planets" , "sphere" , "colorful" ) )
+            new ArrayList<String>( Arrays.asList( "galaxy" , "planets" , "sphere" , "colorful" , "read" ) )
         );
         
         Controller.loader.setOnItemSelectedListener( new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView parent, View v, int position, long id) {  
-                database.fill( Controller.selection.getItem(position).toString() );
-                Projektor.startBYdata();
-                Projektor.initialize() ;
-                Controller.picture.setImageBitmap( database.projection );
-                Projektor.toText() ;
+                if( Controller.selection.getItem(position).toString().equals("read") ){	
+                    Intent chooseFile = new Intent(Intent.ACTION_GET_CONTENT);
+                    chooseFile.setType("*/*");
+                    chooseFile = Intent.createChooser(chooseFile, " choose a file");
+                    startActivityForResult(chooseFile, PICKFILE_RESULT_CODE);
+                }
+                else{
+                    database.fill( Controller.selection.getItem(position).toString() );
+                    Projektor.startBYdata();
+                    Projektor.initialize() ;
+                    Controller.picture.setImageBitmap( database.projection );
+                    Projektor.toText() ;
+                }
+                    
             }
             @Override
             public void onNothingSelected(AdapterView parent) {
@@ -1278,12 +1313,6 @@ public class MainActivity extends Activity {
             }
         });
         Controller.loader.setAdapter( Controller.selection );
-        
-        database.fill();
-        Projektor.startBYdata();
-        Projektor.initialize() ;
-        Controller.picture.setImageBitmap( database.projection );
-        Projektor.toText() ;
         
         Controller.resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1441,4 +1470,21 @@ public class MainActivity extends Activity {
         } );
         
     }
+ 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch( requestCode ){
+            case PICKFILE_RESULT_CODE:
+                if ( resultCode == -1 ){
+                    database.filePathNname = data.getData().getPath();
+                    database.fill( "read" );
+                    Projektor.startBYdata();
+                    Projektor.initialize() ;
+                    Controller.picture.setImageBitmap( database.projection );
+                    Projektor.toText() ;
+                }
+                break;
+        }
+    }
+        
 }
