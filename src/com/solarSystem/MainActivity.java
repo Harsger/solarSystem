@@ -504,6 +504,7 @@ class database{
             BufferedReader reader;
             
             if( assetFileName.equals("read") && !( filePathNname.equals("") ) ){
+                filePathNname = filePathNname.replace( "/document/primary:" , "/storage/self/primary/" );
                 reader = new BufferedReader(
                                                 new FileReader(
                                                     new File( filePathNname )
@@ -618,22 +619,24 @@ class database{
             
         }
         catch(IOException e){
-            line = "" ;
-            for(int i=0; i<counter; i++){
-                line += files[i];
-                line += "\n";
-            }
-            Controller.debugOutput.setText(
-                " can not read database "
-                +
-                " #files : "
-                +
-                counter.toString()
-                +
-                "\n"
-                +
-                line
-            );
+            Controller.debugOutput.setText( e.toString() ) ;
+//             Controller.debugOutput.setText( filePathNname ) ;
+//             line = "" ;
+//             for(int i=0; i<counter; i++){
+//                 line += files[i];
+//                 line += "\n";
+//             }
+//             Controller.debugOutput.setText(
+//                 " can not read database "
+//                 +
+//                 " #files : "
+//                 +
+//                 counter.toString()
+//                 +
+//                 "\n"
+//                 +
+//                 line
+//             );
         }
         
     }
@@ -1249,7 +1252,7 @@ class Projektor{
                             forward.koord[0], forward.koord[1], forward.koord[2],
                             upDir.koord[0]  , upDir.koord[1]  , upDir.koord[2]
                         )
-        );  
+        );
                 
     }
 }
@@ -1259,7 +1262,6 @@ public class MainActivity extends Activity {
     static int identification , position , index ;
     static boolean toDraw , overwrite ;
     static final int PICKFILE_RESULT_CODE = 1;
-    static Uri fileUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -1292,7 +1294,11 @@ public class MainActivity extends Activity {
         Controller.loader.setOnItemSelectedListener( new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView parent, View v, int position, long id) {  
-                if( Controller.selection.getItem(position).toString().equals("read") ){	
+                if( 
+                    Controller.selection.getItem(position).toString().equals("read") 
+                    &&
+                    database.filePathNname.equals( "" )
+                ){
                     Intent chooseFile = new Intent(Intent.ACTION_GET_CONTENT);
                     chooseFile.setType("*/*");
                     chooseFile = Intent.createChooser(chooseFile, " choose a file");
@@ -1476,7 +1482,7 @@ public class MainActivity extends Activity {
         switch( requestCode ){
             case PICKFILE_RESULT_CODE:
                 if ( resultCode == -1 ){
-                    database.filePathNname = data.getData().getPath();
+                    database.filePathNname = new String( data.getData().getPath() );
                     database.fill( "read" );
                     Projektor.startBYdata();
                     Projektor.initialize() ;
