@@ -445,6 +445,8 @@ class database{
     public static ArrayList< Punkt > orte = new ArrayList<Punkt>();
     public static ArrayList< Punkt > zBuffer = new ArrayList<Punkt>();
     public static ArrayList< Dot > zweiD = new ArrayList<Dot>();
+
+    public static double distanceRange[];
     
     public static Punkt central = new Punkt( 0. , 0. , 0. , 0 );
     public static Punkt mainAxis = new Punkt( 0. , 1. , 0. , 0 );
@@ -1002,6 +1004,7 @@ class Projektor{
 
         //////////////////////////////projekt orte to zBuffer///////////////////////////////
         database.zBuffer.clear();
+        database.distanceRange = new double[]{ 1e6 , 1e6 };
         for(int k=0; k<database.orte.size(); k++){
 //             win = forward.winkel( database.orte.get(k).subt( beob ) );
             distance = database.orte.get(k).dist( beob );
@@ -1018,6 +1021,16 @@ class Projektor{
                         projHom[i] += projMat.mat[i][j] * homCoord[j];
                     }   
                 }
+                if( k == 0 ){
+                    database.distanceRange[0] = projHom[2] ;
+                    database.distanceRange[1] = projHom[2] ;
+                }
+                else{
+                    if( database.distanceRange[0] > projHom[2] )
+                        database.distanceRange[0] = projHom[2] ;
+                    if( database.distanceRange[1] < projHom[2] )
+                        database.distanceRange[1] = projHom[2] ;
+                }
                 rc = database.orte.get(k).col;
                 database.zBuffer.add(new Punkt(projHom, rc));
             }
@@ -1032,6 +1045,7 @@ class Projektor{
         int num = database.zBuffer.size();
         int newnum = 0;
         int order[] = new int[num];
+        int rangeDivisions = 100 ;
 //         double values[] = new double[num];
 //         for(int i=1; i<num; i++){
 //             order[i] = i;
@@ -1059,9 +1073,38 @@ class Projektor{
 //             num = newnum;
 //         }
 //         ////////////////////////////////bubble sort END//////////////////////////////////
-        num = database.zBuffer.size();
-        for(int i=num-1; i>=0; i--){
-            order[i] = i ;
+//        num = database.zBuffer.size();
+        if( database.distanceRange[0] < 0. ) 
+            database.distanceRange[0] = 0. ;
+        database.distanceRange[1] -= database.distanceRange[0] ;
+        ArrayList<Integer>[] ranges = new ArrayList[rangeDivisions];
+        for(int r=0; r<rangeDivisions; r++)
+            ranges[r] = new ArrayList<Integer>() ;
+        int count = 0 ;
+        for(int i=0;i<num;i++){
+            int ran = (int)( 
+                            ( 
+                                database.zBuffer.get(i).koord[2] 
+                                - database.distanceRange[0] 
+                            ) / database.distanceRange[1]
+                            * (double)rangeDivisions
+                        );
+            if( ran < 0 || ran >= rangeDivisions ) continue ;
+            ranges[ran].add(i) ;
+            count++;
+        }
+        num = count ;
+        order = new int[num];
+        count = 0 ;
+        for(int r=0; r<rangeDivisions; r++){
+            for(int c=0; c<ranges[r].size(); c++){
+                order[count] = ranges[r].get(c) ;
+                count++;
+            }
+        }
+        for(int i=0; i<num; i++){
+//        for(int i=num-1; i>=0; i--){
+//            order[i] = i ;
             cz = database.zBuffer.get(order[i]).koord[2];
             if(cz > OfUse.minimum){
                 rx = database.zBuffer.get(order[i]).koord[0] / cz;
@@ -1463,7 +1506,7 @@ public class MainActivity extends Activity {
                     
                 }
                 
-                    Projektor.toText();
+                Projektor.toText();
 //                     database.toText();
                 
                 if( toDraw ) Controller.picture.setImageBitmap( database.projection );
